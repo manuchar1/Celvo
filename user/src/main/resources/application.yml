@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: user-service
+
+  datasource:
+    # ⚠️ ყურადღება: აქ port 6543 და პარამეტრები აუცილებელია Supavisor-ისთვის!
+    url: ${DATABASE_URL:jdbc:postgresql://aws-0-eu-central-1.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0}
+    username: ${DATABASE_USERNAME:postgres.sheni_project_user}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+    # 👇 ეს ბლოკი აკლდა შენს ვერსიას და აუცილებლად დასამატებელია!
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 600000 # 10 წუთი (კრიტიკულია Supabase-ისთვის)
+      pool-name: CelvoHikariPool
+
+  jpa:
+    hibernate:
+      ddl-auto: validate # ✅ ძალიან კარგია! ბაზის სტრუქტურას არ შეცვლის.
+    show-sql: true
+    properties:
+      hibernate:
+        # dialect-ის მითითება ახალ ვერსიებში სავალდებულო აღარაა, მაგრამ ხელს არ უშლის
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: user_service # ✅ იდეალურია! ავტომატურად ამ სქემაში მოძებნის ცხრილებს.
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SUPABASE_JWT_ISSUER_URI}
+          jwk-set-uri: ${SUPABASE_JWT_JWK_SET_URI}
+          # audiences პარამეტრს Spring Boot დეფოლტად არ ამოწმებს, თუ კოდში არ გაქვს Custom Validator.
+          # მაგრამ კონფიგში ყოფნა ხელს არ უშლის.
+          audiences: ${SUPABASE_JWT_AUDIENCE:authenticated}
+
+server:
+  port: 8081 # კარგია, რომ პორტი შეცვალე (თუ 8080 დაკავებულია)

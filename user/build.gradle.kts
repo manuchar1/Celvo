@@ -15,6 +15,14 @@ dependencies {
     testImplementation(kotlin("test"))
     implementation(projects.common)
 
+
+    implementation(libs.spring.boot.starter.data.jpa)
+    implementation(libs.spring.boot.starter.validation)
+    runtimeOnly(libs.postgresql)
+
+
+    // Jakarta Servlet API
+    implementation(libs.jakarta.servlet.api)
 }
 
 kotlin {

@@ -13,6 +13,7 @@ repositories {
 
 dependencies {
     implementation(projects.common)
+    implementation("com.google.firebase:firebase-admin:9.2.0")
     testImplementation(kotlin("test"))
 }
 
