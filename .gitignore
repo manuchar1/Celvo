@@ -1,0 +1,38 @@
+# --- Android & Gradle ---
+*.iml
+.kotlin
+.gradle
+**/build/
+local.properties
+.idea
+.externalNativeBuild
+.cxx
+
+# --- OS Specific ---
+.DS_Store
+captures
+Thumbs.db
+
+# --- iOS / Xcode ---
+xcuserdata
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+
+# --- Web / JS (If applicable) ---
+node_modules/
+
+# --- Celvo Specific Security (Google Auth & Supabase) ---
+google-services.json
+GoogleService-Info.plist
+
+# --- Kotlin Multiplatform & iOS Specifics ---
+iosApp/Pods/
+*.framework
+*.xcframework
+
+# --- Testing & Injection Generated ---
+koin-generated/
