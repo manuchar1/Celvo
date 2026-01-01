@@ -17,7 +17,7 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(libs.kotlin.stdlib)
-                implementation(project(":core:domain"))
+                implementation(projects.core.domain)
 
             }
         }

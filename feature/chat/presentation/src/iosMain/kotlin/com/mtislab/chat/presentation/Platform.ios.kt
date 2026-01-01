@@ -1,3 +1,3 @@
-package com.example.chat.presentation
+package com.mtislab.chat.presentation
 
 actual fun platform() = "iOS"

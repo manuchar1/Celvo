@@ -1,9 +1,9 @@
-package com.mtislab.celvo
+package com.mtislab.core.data.repository
 
 import com.mtislab.core.data.networking.safeSupabaseCall
+import com.mtislab.core.domain.repository.AuthRepository
 import com.mtislab.core.domain.utils.DataError
 import com.mtislab.core.domain.utils.Resource
-import com.mtislab.domain.AuthRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Google

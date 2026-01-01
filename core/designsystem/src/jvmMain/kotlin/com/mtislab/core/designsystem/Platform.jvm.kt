@@ -1,3 +1,3 @@
-package com.example.core.designsystem
+package com.mtislab.core.designsystem
 
 actual fun platform() = "JVM"

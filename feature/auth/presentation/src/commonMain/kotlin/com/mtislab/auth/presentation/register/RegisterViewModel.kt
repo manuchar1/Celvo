@@ -2,8 +2,8 @@ package com.mtislab.auth.presentation.register
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mtislab.core.domain.repository.AuthRepository
 import com.mtislab.core.domain.utils.Resource
-import com.mtislab.domain.AuthRepository
 import com.mtislab.domain.GoogleAuthProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

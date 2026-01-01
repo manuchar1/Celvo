@@ -3,6 +3,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.dependencies
 
+
 class CmpLibraryConventionPlugin: Plugin<Project> {
 
     override fun apply(target: Project) {
@@ -12,6 +13,8 @@ class CmpLibraryConventionPlugin: Plugin<Project> {
                 apply("org.jetbrains.kotlin.plugin.compose")
                 apply("org.jetbrains.compose")
             }
+
+
 
             dependencies {
                 "commonMainImplementation"(libs.findLibrary("jetbrains-compose-ui").get())

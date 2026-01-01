@@ -1,3 +1,3 @@
-package com.example.auth.presentation
+package com.mtislab.auth.presentation
 
 actual fun platform() = "JVM"

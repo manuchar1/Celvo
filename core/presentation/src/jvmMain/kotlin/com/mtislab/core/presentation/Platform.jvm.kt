@@ -1,3 +1,3 @@
-package com.example.core.presentation
+package com.mtislab.core.presentation
 
 actual fun platform() = "JVM"
