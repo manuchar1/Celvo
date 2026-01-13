@@ -1,0 +1,18 @@
+<resources>
+    <string name="nav_home">მთავარი</string>
+    <string name="nav_search">ძებნა</string>
+    <string name="nav_my_esim">ჩემი E-Sim</string>
+    <string name="nav_profile">პროფილი</string>
+
+    <string name="tab_country">ქვეყანა</string>
+    <string name="tab_region">რეგიონი</string>
+
+    <string name="search_placeholder">მოძებნე ქვეყანა</string>
+    <string name="search_no_results">ვერაფერი მოიძებნა</string>
+    <string name="search_no_results_desc">"%1$s"-ით არაფერი იძებნება</string>
+    <string name="section_search_results">ძებნის შედეგები</string>
+    <string name="section_top_picks">საუკეთესო არჩევანი</string>
+    <string name="section_all_countries">ყველა ქვეყანა</string>
+    <string name="section_regional_plans">რეგიონალური პაკეტები</string>
+    <string name="action_retry">სცადეთ თავიდან</string>
+</resources>
