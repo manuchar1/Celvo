@@ -16,6 +16,7 @@ dependencies {
     api(libs.spring.boot.starter.oauth2.resource.server)
     api(libs.kotlin.reflect)
     api(libs.jackson.module.kotlin)
+    api(libs.springdoc.openapi.ui)
 
     annotationProcessor(libs.spring.boot.configuration.processor)
     testImplementation(kotlin("test"))

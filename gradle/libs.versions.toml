@@ -8,6 +8,8 @@ jwt = "0.12.6"
 okhttp = "4.12.0"
 firebase = "9.5.0"
 kotlinx-coroutines = "1.0.0"
+springdoc = "2.3.0"
+caffeine = "3.1.8"
 
 [libraries]
 # Spring Boot Starters
@@ -25,6 +27,7 @@ spring-boot-starter-thymeleaf = { module = "org.springframework.boot:spring-boot
 spring-boot-starter-redis = { module = "org.springframework.boot:spring-boot-starter-data-redis" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure" }
+springdoc-openapi-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
 
 spring-boot-starter-oauth2-resource-server = { group = "org.springframework.boot", name = "spring-boot-starter-oauth2-resource-server" }
 spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor" }
@@ -49,6 +52,9 @@ postgresql = { module = "org.postgresql:postgresql" }
 # HTTP
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 okhttp-logging = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "okhttp" }
+
+# Cache
+caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "caffeine" }
 
 # Firebase
 firebase-admin-sdk = { module = "com.google.firebase:firebase-admin", version.ref = "firebase" }

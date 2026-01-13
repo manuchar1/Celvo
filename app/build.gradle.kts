@@ -13,9 +13,12 @@ dependencies {
 	implementation(projects.user)
 	implementation(projects.notifications)
 	implementation(projects.common)
+	implementation(projects.provisioning)
+	implementation(projects.marketing)
 	implementation(libs.spring.boot.starter.data.jpa)
 	implementation(libs.spring.boot.starter.security)
 	implementation(libs.kotlin.reflect)
+	implementation("org.springframework.boot:spring-boot-starter-actuator")
 
 	runtimeOnly(libs.postgresql)
 	testRuntimeOnly("com.h2database:h2")
