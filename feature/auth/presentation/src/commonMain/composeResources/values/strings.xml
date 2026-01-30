@@ -1,0 +1,8 @@
+<resources>
+    <string name="action_skip">Skip</string>
+    <string name="country_turkiye">Türkiye</string>
+    <string name="country_germany">Germany</string>
+    <string name="country_georgia">Georgia</string>
+    <string name="countries_500_plus">500+ countries</string>
+
+</resources>

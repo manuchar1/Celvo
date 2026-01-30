@@ -29,5 +29,6 @@ include(":feature:chat:database")
 include(":feature:chat:domain")
 include(":feature:chat:presentation")
 include(":feature:store")
+include(":feature:profile")
 
 includeBuild("build-logic")

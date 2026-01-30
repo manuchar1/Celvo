@@ -3,7 +3,7 @@ package com.mtislab.core.designsystem.theme
 import androidx.compose.ui.graphics.Color
 
 
-// Brand (Green) - ძირითადად გამოიყენება Success-ისთვის ან ბრენდინგისთვის
+
 val CelvoGreen1000 = Color(0xFF52694D)
 val CelvoGreen900 = Color(0xFF6A8662)
 val CelvoGreen700 = Color(0xFF80A378)
@@ -16,7 +16,7 @@ val CelvoPurple900 = Color(0xFF7E75B3)
 val CelvoPurple700 = Color(0xFF7D74B1)
 val CelvoPurple500 = Color(0xFF9087CD)
 val CelvoPurple300 = Color(0xFFA39AE9)
-// UI-დან აღებული ღია იასამნისფერი (Light mode active tab background)
+
 val CelvoPurpleTint = Color(0xFFF3F0FF)
 
 // Rose (Red) - Error states
@@ -43,12 +43,18 @@ val CelvoLight700 = Color(0xFF6E7071) // Secondary Text
 val CelvoLight500 = Color(0xFF898C8E)
 val CelvoLight400 = Color(0xFFA5A9AB)
 val CelvoLight300 = Color(0xFFC1C5C8) // Borders
-val CelvoWhite = Color(0xFFFFFFFF) // Background
-val CelvoLightSurface = Color(0xFFF5F7F8) // Light Inputs/Cards background
+val CelvoWhite = Color(0xFFFFFFFF)
+val CelvoLightSurface = Color(0xFFF5F7F8)
 
 
 
 val CelvoGradientBase = Color(0xFF7969D6)
+
+val CelvoBorderBase = Color(0xFFC1C5C8)
+
+val CelvoBorderLightAlpha = Color(0x73C1C5C8)
+
+val CelvoBorderDarkAlpha = Color(0x26C1C5C8)
 
 
 

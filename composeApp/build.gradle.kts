@@ -15,30 +15,26 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
-
-
             implementation(libs.koin.android)
-
             implementation(projects.feature.auth.presentation)
 
 
         }
         commonMain.dependencies {
 
-            implementation(project(":core:data"))
-            implementation(project(":core:domain"))
+            implementation(projects.core.data)
+            api(projects.core.domain)
             implementation(project(":core:designsystem"))
             implementation(project(":core:presentation"))
-
             implementation(project(":feature:auth:domain"))
             implementation(project(":feature:auth:presentation"))
-
             implementation(project(":feature:chat:data"))
             implementation(project(":feature:chat:database"))
             implementation(project(":feature:chat:domain"))
             implementation(project(":feature:chat:presentation"))
 
             implementation(projects.feature.store)
+            implementation(projects.feature.profile)
 
             implementation(compose.runtime)
             implementation(compose.foundation)
@@ -65,7 +61,23 @@ kotlin {
     sourceSets.commonTest.dependencies {
         implementation(kotlin("test"))
     }
+
+
+
+
+
+    targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().configureEach {
+        if (konanTarget.family.isAppleFamily) {
+            binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.Framework>().configureEach {
+                export(projects.core.domain)
+            }
+        }
+    }
+
 }
+
+
+
 
 
 compose.desktop {

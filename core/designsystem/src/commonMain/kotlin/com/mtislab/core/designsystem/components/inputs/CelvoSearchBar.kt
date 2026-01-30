@@ -25,7 +25,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.celvo.core.designsystem.resources.Res
+import com.celvo.core.designsystem.resources.ic_cancel
+import com.celvo.core.designsystem.resources.search
 import com.mtislab.core.designsystem.theme.extended
+import org.jetbrains.compose.resources.vectorResource
 
 @Composable
 fun CelvoSearchBar(
@@ -57,7 +61,7 @@ fun CelvoSearchBar(
     ) {
 
         Icon(
-            imageVector = Icons.Default.Search,
+            imageVector = vectorResource(Res.drawable.search),
             contentDescription = null,
             tint = iconColor,
             modifier = Modifier.size(20.dp)

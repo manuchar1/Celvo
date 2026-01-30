@@ -16,31 +16,31 @@ import com.celvo.core.designsystem.resources.plusjakartasans_semibold
 import org.jetbrains.compose.resources.Font
 
 
-
 import org.jetbrains.compose.resources.Font
 
-val PlusJakartaSans @Composable get() = FontFamily(
-    Font(
-        resource = Res.font.plusjakartasans_light,
-        weight = FontWeight.Light
-    ),
-    Font(
-        resource = Res.font.plusjakartasans_regular,
-        weight = FontWeight.Normal
-    ),
-    Font(
-        resource = Res.font.plusjakartasans_medium,
-        weight = FontWeight.Medium
-    ),
-    Font(
-        resource = Res.font.plusjakartasans_semibold,
-        weight = FontWeight.SemiBold
-    ),
-    Font(
-        resource = Res.font.plusjakartasans_bold,
-        weight = FontWeight.Bold
-    ),
-)
+val PlusJakartaSans
+    @Composable get() = FontFamily(
+        Font(
+            resource = Res.font.plusjakartasans_light,
+            weight = FontWeight.Light
+        ),
+        Font(
+            resource = Res.font.plusjakartasans_regular,
+            weight = FontWeight.Normal
+        ),
+        Font(
+            resource = Res.font.plusjakartasans_medium,
+            weight = FontWeight.Medium
+        ),
+        Font(
+            resource = Res.font.plusjakartasans_semibold,
+            weight = FontWeight.SemiBold
+        ),
+        Font(
+            resource = Res.font.plusjakartasans_bold,
+            weight = FontWeight.Bold
+        ),
+    )
 
 val Typography.labelXSmall: TextStyle
     @Composable get() = TextStyle(
@@ -58,65 +58,66 @@ val Typography.titleXSmall: TextStyle
         lineHeight = 18.sp
     )
 
-val Typography @Composable get() = Typography(
-    titleLarge = TextStyle(
-        fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 30.sp,
-        lineHeight = 36.sp
-    ),
-    titleMedium = TextStyle(
-        fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 20.sp,
-        lineHeight = 28.sp
-    ),
-    titleSmall = TextStyle(
-        fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 16.sp,
-        lineHeight = 24.sp
-    ),
-    bodyLarge = TextStyle(
-        fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.Normal,
-        fontSize = 18.sp,
-        lineHeight = 26.sp
-    ),
-    bodyMedium = TextStyle(
-        fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp
-    ),
-    bodySmall = TextStyle(
-        fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.Normal,
-        fontSize = 14.sp,
-        lineHeight = 20.sp
-    ),
-    labelMedium = TextStyle(
-        fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.Medium,
-        fontSize = 16.sp,
-        lineHeight = 24.sp
-    ),
-    labelSmall = TextStyle(
-        fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 14.sp,
-        lineHeight = 20.sp
-    ),
-    headlineSmall = TextStyle(
-        fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 14.sp,
-        lineHeight = 18.sp
-    ),
-    displaySmall = TextStyle(
-        fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 11.sp,
-        lineHeight = 14.sp
-    ),
-)
+val Typography
+    @Composable get() = Typography(
+        titleLarge = TextStyle(
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 24.sp,
+            lineHeight = 36.sp
+        ),
+        titleMedium = TextStyle(
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 20.sp,
+            lineHeight = 28.sp
+        ),
+        titleSmall = TextStyle(
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.Medium,
+            fontSize = 18.sp,
+            lineHeight = 24.sp
+        ),
+        bodyLarge = TextStyle(
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.Normal,
+            fontSize = 18.sp,
+            lineHeight = 26.sp
+        ),
+        bodyMedium = TextStyle(
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.Normal,
+            fontSize = 16.sp,
+            lineHeight = 24.sp
+        ),
+        bodySmall = TextStyle(
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.Normal,
+            fontSize = 14.sp,
+            lineHeight = 20.sp
+        ),
+        labelMedium = TextStyle(
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.Medium,
+            fontSize = 16.sp,
+            lineHeight = 24.sp
+        ),
+        labelSmall = TextStyle(
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 12.sp,
+            lineHeight = 20.sp
+        ),
+        headlineSmall = TextStyle(
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 14.sp,
+            lineHeight = 18.sp
+        ),
+        displaySmall = TextStyle(
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 11.sp,
+            lineHeight = 14.sp
+        ),
+    )

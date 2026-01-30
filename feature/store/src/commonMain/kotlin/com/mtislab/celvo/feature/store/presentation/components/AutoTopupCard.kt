@@ -33,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -55,12 +54,11 @@ fun AutoTopupCard(
     onToggle: (Boolean) -> Unit,
     onSelectOption: (TopupOption) -> Unit
 ) {
-    // Colors
+
     val successColor = MaterialTheme.colorScheme.extended.success
-    val purpleLinkColor = Color(0xFFA79FEA) // Custom Visual Color
+    val purpleLinkColor = Color(0xFFA79FEA)
 
 
-    // Border Logic: თუ ჩართულია - მწვანე, თუ არა - CelvoCard-ის default (გამჭვირვალე/ნაცრისფერი)
     val customBorder = if (isEnabled) {
         BorderStroke(1.dp, successColor.copy(alpha = 0.5f))
     } else {
@@ -69,31 +67,26 @@ fun AutoTopupCard(
 
     CelvoCard(
         border = customBorder,
-        // Padding-ს ვთიშავთ კარკასზე, რომ Glow Effect კუთხეში მივიდეს
         contentPadding = PaddingValues(0.dp)
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
 
-            // ✨ GLOW EFFECT (მხოლოდ მაშინ, როცა ჩართულია)
-         //   if (isEnabled) {
-                Box(
-                    modifier = Modifier
-                        .size(150.dp)
-                        .offset(x = (-40).dp, y = (-40).dp)
-                        .background(
-                            brush = Brush.radialGradient(
-                                colors = listOf(
-                                    successColor.copy(alpha = 0.2f),
-                                    Color.Transparent
-                                )
+            Box(
+                modifier = Modifier
+                    .size(150.dp)
+                    .offset(x = (-40).dp, y = (-40).dp)
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                successColor.copy(alpha = 0.2f),
+                                Color.Transparent
                             )
                         )
-                )
-          //  }
+                    )
+            )
 
-            // 📦 MAIN CONTENT
             Column(
-                modifier = Modifier.padding(16.dp) // Padding-ს ვაბრუნებთ აქ
+                modifier = Modifier.padding(16.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -132,7 +125,12 @@ fun AutoTopupCard(
                 // --- Description Text ---
                 val descriptionText = buildAnnotatedString {
                     append("ინტერნეტის ამოწურვის შემთხვევაში,\nშევსება მოხდება ავტომატურად. ")
-                    withStyle(style = SpanStyle(color = purpleLinkColor, fontWeight = FontWeight.Bold)) {
+                    withStyle(
+                        style = SpanStyle(
+                            color = purpleLinkColor,
+                            fontWeight = FontWeight.Bold
+                        )
+                    ) {
                         append("გაიგე მეტი")
                     }
                 }
@@ -201,7 +199,6 @@ fun TopupChip(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    // Custom Active Color (Purple)
     val activeColor = Color(0xFFA79FEA)
     val inactiveBg = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
 

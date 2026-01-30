@@ -1,5 +1,9 @@
 package com.mtislab.celvo.feature.store.domain.model
 
+import kotlinx.serialization.Serializable
+
+
+@Serializable
 data class EsimPackage(
     val id: String,
     val name: String,

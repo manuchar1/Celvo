@@ -27,6 +27,9 @@ class BuildKonfigConventionPlugin : Plugin<Project> {
                     val supabaseKey = properties.getProperty("SUPABASE_KEY")
                         ?: throw IllegalStateException("Missing SUPABASE_KEY in local.properties")
                     buildConfigField(FieldSpec.Type.STRING, "SUPABASE_KEY", supabaseKey)
+
+                    val googleClientId = properties.getProperty("GOOGLE_WEB_CLIENT_ID") ?: ""
+                    buildConfigField(FieldSpec.Type.STRING, "GOOGLE_WEB_CLIENT_ID", googleClientId)
                 }
             }
         }

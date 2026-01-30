@@ -1,9 +1,9 @@
 package com.mtislab.core.data.logging
 import co.touchlab.kermit.Logger
-import com.mtislab.core.domain.logging.ChirpLogger
+import com.mtislab.core.domain.logging.CelvoLogger
 
 
-object KermitLogger: ChirpLogger {
+object KermitLogger: CelvoLogger {
 
     override fun debug(message: String) {
         Logger.d(message)

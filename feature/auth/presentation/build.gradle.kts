@@ -1,5 +1,7 @@
 plugins {
     alias(libs.plugins.convention.cmp.feature)
+    alias(libs.plugins.convention.buildkonfig)
+
 
 }
 
@@ -8,20 +10,14 @@ kotlin {
 
     jvm()
 
-
-    // Source set declarations.
-    // Declaring a target automatically creates a source set with the same name. By default, the
-    // Kotlin Gradle Plugin creates additional source sets that depend on each other, since it is
-    // common to share sources between related targets.
-    // See: https://kotlinlang.org/docs/multiplatform-hierarchy.html
     sourceSets {
         commonMain {
             dependencies {
                 implementation(libs.kotlin.stdlib)
-                implementation(libs.kotlin.stdlib)
 
                 implementation(projects.feature.auth.domain)
                 implementation(projects.core.domain)
+                implementation(projects.core.data)
                 implementation(projects.core.designsystem)
                 implementation(projects.core.presentation)
 

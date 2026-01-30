@@ -1,6 +1,5 @@
 package com.mtislab.celvo.feature.store.presentation
 
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,9 +11,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -43,146 +44,103 @@ import celvo.feature.store.generated.resources.section_search_results
 import celvo.feature.store.generated.resources.section_top_picks
 import celvo.feature.store.generated.resources.tab_country
 import celvo.feature.store.generated.resources.tab_region
-
+import com.celvo.core.designsystem.resources.ic_cancel
+import com.celvo.core.designsystem.resources.ic_google_logo
+import com.celvo.core.designsystem.resources.ic_log_in
 import com.mtislab.celvo.feature.store.presentation.components.MarketingBannerCarousel
+import com.mtislab.core.designsystem.components.buttons.CelvoCircleButton
 import com.mtislab.core.designsystem.components.inputs.CelvoSearchBar
 import com.mtislab.core.designsystem.components.items.CelvoCountryItem
 import com.mtislab.core.designsystem.components.switchers.CelvoTabSwitcher
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.vectorResource
 import org.koin.compose.viewmodel.koinViewModel
+import com.celvo.core.designsystem.resources.Res as CoreRes
 
 @Composable
 fun StoreScreenRoot(
-    viewModel: StoreViewModel = koinViewModel(), onNavigateToDetails: (String, String) -> Unit
+    viewModel: StoreViewModel = koinViewModel(),
+    onNavigateToDetails: (String, String) -> Unit,
+    onNavigateToLogin: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     StoreScreen(
-        state = state, onAction = { action ->
+        state = state,
+        onAction = { action ->
             viewModel.onAction(action)
             if (action is StoreAction.OnItemClick) {
                 onNavigateToDetails(action.item.id, action.item.name)
             }
-        })
+        },
+        onLoginClick = onNavigateToLogin
+    )
 }
 
 @Composable
 fun StoreScreen(
-    state: StoreState, onAction: (StoreAction) -> Unit
+    state: StoreState,
+    onAction: (StoreAction) -> Unit,
+    onLoginClick: () -> Unit
 ) {
-    Scaffold(containerColor = Color.Transparent) { padding ->
+    Scaffold(
+        containerColor = Color.Transparent
+    ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = padding.calculateTopPadding())
+                .padding(horizontal = 16.dp)
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
+            // 1. Header Area
+            StoreHeader(
+                selectedTab = state.selectedTab,
+                isLoggedIn = state.isLoggedIn,
+                onTabSelect = { onAction(StoreAction.OnTabSelected(it)) },
+                onLoginClick = onLoginClick,
+                onNotificationClick = { /* TODO: Handle Notification */ }
 
-            // 1. TAB SWITCHER
-            val tabs = listOf(
-                stringResource(Res.string.tab_country), stringResource(Res.string.tab_region)
+
             )
-            val selectedIndex = if (state.selectedTab == StoreTab.COUNTRIES) 0 else 1
 
-            CelvoTabSwitcher(
-                options = tabs, selectedIndex = selectedIndex, onOptionSelected = { index ->
-                    val newTab = if (index == 0) StoreTab.COUNTRIES else StoreTab.REGIONS
-                    onAction(StoreAction.OnTabSelected(newTab))
-                })
+            Spacer(modifier = Modifier.height(14.dp))
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // 2. SEARCH BAR
+            // 2. Search Bar
             CelvoSearchBar(
                 query = state.searchQuery,
                 onQueryChange = { onAction(StoreAction.OnSearchQueryChange(it)) },
                 placeholder = stringResource(Res.string.search_placeholder)
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // 3. CONTENT AREA
-            if (state.isLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
-            } else if (state.errorMessage != null) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(state.errorMessage ?: "", color = MaterialTheme.colorScheme.error)
-                        Spacer(Modifier.height(8.dp))
-                        Button(onClick = { onAction(StoreAction.OnRetry) }) {
-                            Text(stringResource(Res.string.action_retry))
-                        }
-                    }
-                }
-            } else if (state.displayedItems.isEmpty()) {
-                // EMPTY STATE
-                EmptySearchResults(query = state.searchQuery)
-            } else {
-                // ✅ MAIN LIST (VERTICAL)
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp), // დაშორება ელემენტებს შორის (Figma: 12px)
-                    contentPadding = PaddingValues(bottom = 100.dp) // ადგილი BottomBar-ისთვის
-                ) {
-
-                    // --- Banners ---
-                    item {
-                        if (state.marketingBanners.isNotEmpty()) {
-                            // პატარა დაშორება სერჩსა და ბანერს შორის
-                            MarketingBannerCarousel(
-                                banners = state.marketingBanners, onBannerClick = { link ->
-                                    onAction(StoreAction.OnBannerClick(link))
-                                })
-                            Spacer(modifier = Modifier.height(24.dp))
-                        }
+            // 3. Content Area with State Management
+            Box(modifier = Modifier.fillMaxSize()) {
+                when {
+                    state.isLoading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center),
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
 
-                    // --- Top Picks (Vertical List) ---
-                    // ეს სექცია გამოჩნდება მხოლოდ მაშინ, როცა displayedTopPicks არ არის ცარიელი.
-                    // ViewModel-ის ლოგიკით, ძებნის დროს ეს სია ცარიელდება, ამიტომ სექციაც გაქრება.
-                    if (state.displayedTopPicks.isNotEmpty()) {
-                        item {
-                            SectionHeader(
-                                title = stringResource(Res.string.section_top_picks),
-                                hasSeeAll = true, // Figma-ში აქვს "მეტის ნახვა"
-                                onSeeAllClick = { /* TODO: ნავიგაცია სრულ სიაზე */ })
-                            Spacer(modifier = Modifier.height(12.dp))
-                        }
-
-                        // Top Picks აიტემები (ვერტიკალურად)
-                        items(state.displayedTopPicks) { item ->
-                            CelvoCountryItem(
-                                name = item.name,
-                                price = "${item.formattedPrice} - დან", // ფორმატირება
-                                flagUrl = item.imageUrl,
-                                discountPercent = null, // TODO: თუ ბექენდიდან მოვა, აქ ჩავსვამთ item.discountPercent
-                                onClick = { onAction(StoreAction.OnItemClick(item)) })
-                        }
-
-                        item {
-                            Spacer(modifier = Modifier.height(24.dp)) // დაშორება სექციებს შორის
-                        }
+                    state.errorMessage != null -> {
+                        ErrorState(
+                            message = state.errorMessage ?: "Unknown error",
+                            onRetry = { onAction(StoreAction.OnRetry) },
+                            modifier = Modifier.align(Alignment.Center)
+                        )
                     }
 
-                    // --- All Countries / Search Results ---
-                    item {
-                        val headerTitle =
-                            if (state.searchQuery.isNotEmpty()) stringResource(Res.string.section_search_results)
-                            else if (state.selectedTab == StoreTab.COUNTRIES) stringResource(Res.string.section_all_countries)
-                            else stringResource(Res.string.section_regional_plans)
-
-                        SectionHeader(title = headerTitle)
-                        Spacer(modifier = Modifier.height(12.dp))
+                    state.displayedItems.isEmpty() && state.searchQuery.isNotEmpty() -> {
+                        EmptySearchResults(
+                            query = state.searchQuery,
+                        )
                     }
 
-                    // Main Items (Vertical)
-                    items(state.displayedItems) { item ->
-                        CelvoCountryItem(
-                            name = item.name,
-                            price = "${item.formattedPrice} - დან",
-                            flagUrl = item.imageUrl,
-                            discountPercent = null,
-                            onClick = { onAction(StoreAction.OnItemClick(item)) })
+                    else -> {
+                        StoreContent(state = state, onAction = onAction)
                     }
                 }
             }
@@ -190,11 +148,130 @@ fun StoreScreen(
     }
 }
 
-// --- Helper UI Components ---
+@Composable
+private fun StoreContent(
+    state: StoreState,
+    onAction: (StoreAction) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 100.dp)
+    ) {
+        // A. Marketing Banners (Only if available)
+        if (state.marketingBanners.isNotEmpty()) {
+            item {
+                MarketingBannerCarousel(
+                    banners = state.marketingBanners,
+                    onBannerClick = { link -> onAction(StoreAction.OnBannerClick(link)) }
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+
+        // B. Top Picks Section (Only if available)
+        if (state.displayedTopPicks.isNotEmpty()) {
+            item {
+                SectionHeader(
+                    title = stringResource(Res.string.section_top_picks),
+                    hasSeeAll = true,
+                    onSeeAllClick = { /* TODO: Navigate to full list */ }
+                )
+            }
+            items(state.displayedTopPicks) { item ->
+                CelvoCountryItem(
+                    name = item.name,
+                    price = item.formattedPrice, // Assuming pre-formatted string
+                    flagUrl = item.imageUrl,
+                    discountPercent = null, // Add to model if needed
+                    onClick = { onAction(StoreAction.OnItemClick(item)) }
+                )
+            }
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+
+        // C. Main List Section
+        item {
+            val headerTitle = when {
+                state.searchQuery.isNotEmpty() -> stringResource(Res.string.section_search_results)
+                state.selectedTab == StoreTab.COUNTRIES -> stringResource(Res.string.section_all_countries)
+                else -> stringResource(Res.string.section_regional_plans)
+            }
+            SectionHeader(title = headerTitle)
+        }
+
+        items(state.displayedItems) { item ->
+            CelvoCountryItem(
+                name = item.name,
+                price = item.formattedPrice,
+                flagUrl = item.imageUrl,
+                discountPercent = null,
+                onClick = { onAction(StoreAction.OnItemClick(item)) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun StoreHeader(
+    selectedTab: StoreTab,
+    isLoggedIn: Boolean,
+    onTabSelect: (StoreTab) -> Unit,
+    onLoginClick: () -> Unit,
+    onNotificationClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Tab Switcher
+        // weight(1f, fill = false) prevents tabs from overlapping the button
+        CelvoTabSwitcher(
+            options = listOf(
+                stringResource(Res.string.tab_country),
+                stringResource(Res.string.tab_region)
+            ),
+            selectedIndex = if (selectedTab == StoreTab.COUNTRIES) 0 else 1,
+            onOptionSelected = { index ->
+                onTabSelect(if (index == 0) StoreTab.COUNTRIES else StoreTab.REGIONS)
+            },
+            modifier = Modifier.weight(1f, fill = false)
+        )
+
+        // Using a small spacer for touch target safety,
+        // relying on SpaceBetween for main positioning
+        Spacer(modifier = Modifier.width(16.dp))
+
+        if (isLoggedIn) {
+            CelvoCircleButton(
+                icon = painterResource(CoreRes.drawable.ic_cancel),
+                onClick = onNotificationClick,
+                // backgroundColor = ... თუ გინდა შეცვალე
+            )
+        } else {
+            CelvoCircleButton(
+                icon = painterResource(CoreRes.drawable.ic_log_in),
+                onClick = onLoginClick
+            )
+        }
+
+       /* CelvoCircleButton(
+            icon = painterResource(CoreRes.drawable.ic_log_in),
+            onClick = onLoginClick
+        )*/
+    }
+}
 
 @Composable
 fun SectionHeader(
-    title: String, hasSeeAll: Boolean = false, onSeeAllClick: () -> Unit = {}
+    title: String,
+    hasSeeAll: Boolean = false,
+    onSeeAllClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -210,7 +287,7 @@ fun SectionHeader(
         if (hasSeeAll) {
             TextButton(onClick = onSeeAllClick) {
                 Text(
-                    text = "მეტის ნახვა", //stringResource(Res.string.action_see_all), // "მეტის ნახვა"
+                    text = "მეტის ნახვა", // TODO: Move to stringResource(Res.string.action_see_all)
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -220,9 +297,12 @@ fun SectionHeader(
 }
 
 @Composable
-fun EmptySearchResults(query: String) {
+fun EmptySearchResults(
+    query: String,
+    modifier: Modifier = Modifier
+) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -246,6 +326,29 @@ fun EmptySearchResults(query: String) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
+        }
+    }
+}
+
+@Composable
+fun ErrorState(
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = message,
+            color = MaterialTheme.colorScheme.error,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(onClick = onRetry) {
+            Text(stringResource(Res.string.action_retry))
         }
     }
 }

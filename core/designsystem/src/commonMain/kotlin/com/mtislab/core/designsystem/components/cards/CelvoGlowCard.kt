@@ -35,18 +35,14 @@ fun CelvoGlowCard(
     ) {
         Box(
             modifier = Modifier.fillMaxSize()
-            // აქ Clip არ გვინდა, CelvoCard-ის Surface უკვე ჭრის (Clip) ფორმას
         ) {
 
-            // ✨ GLOW (ახლა უკვე Radial Gradient-ით)
             CelvoGlow(
                 color = glowColor,
                 modifier = Modifier
                     .align(glowAlignment)
                     .offset(x = glowOffsetX, y = glowOffsetY)
             )
-
-            // 📦 Content Layer
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {

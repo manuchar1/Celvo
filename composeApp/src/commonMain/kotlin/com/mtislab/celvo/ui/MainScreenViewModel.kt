@@ -2,33 +2,40 @@ package com.mtislab.celvo.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mtislab.core.data.session.SessionManager
+import com.mtislab.core.domain.auth.AuthState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-class MainScreenViewModel : ViewModel() {
-
-    private var hasLoadedInitialData = false
+class MainScreenViewModel(
+    private val sessionManager: SessionManager
+) : ViewModel() {
 
     private val _state = MutableStateFlow(MainScreenState())
-    val state = _state
-        .onStart {
-            if (!hasLoadedInitialData) {
-                /** Load initial data here **/
-                hasLoadedInitialData = true
-            }
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000L),
-            initialValue = MainScreenState()
-        )
 
-    fun onAction(action: MainScreenAction) {
-        when (action) {
-            else -> TODO("Handle actions")
+    val state = _state.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000L),
+        initialValue = MainScreenState()
+    )
+
+    init {
+        viewModelScope.launch {
+            sessionManager.state.collect { authState ->
+                val isLoggedIn = authState is AuthState.Authenticated
+                _state.update {
+                    it.copy(isLoggedIn = isLoggedIn)
+                }
+            }
         }
     }
 
+    fun onAction(action: MainScreenAction) {
+        when (action) {
+            else -> { /* Handle other actions */ }
+        }
+    }
 }

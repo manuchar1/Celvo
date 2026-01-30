@@ -9,6 +9,7 @@ androidx-appcompat = "1.7.1"
 androidx-espresso = "3.7.0"
 junit = "4.13.2"
 kotlin = "2.3.0"
+androidx-browser = "1.8.0"
 
 credentials = "1.5.0"
 googleid = "1.1.1"
@@ -25,7 +26,7 @@ composeBom = "2025.12.01"
 
 # Compose
 composeHotReload = "1.0.0"
-composeMultiplatform = "1.9.3"
+composeMultiplatform = "1.10.0"
 # Maintain compose multiplatform version aligned with navigation, cache error could happen
 compose-lifecycle = "2.9.6"
 navigation-compose = "2.9.1"
@@ -114,6 +115,8 @@ googleid = { module = "com.google.android.libraries.identity.googleid:googleid",
 
 # Supabase Auth
 supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt", version.ref = "supabase" }
+
+androidx-browser = { module = "androidx.browser:browser", version.ref = "androidx-browser" }
 
 
 

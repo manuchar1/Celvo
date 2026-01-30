@@ -26,7 +26,6 @@ fun CelvoBottomBar(
     currentDestination: NavDestination?,
     modifier: Modifier = Modifier
 ) {
-    // ფერები შენი დიზაინიდან (შეგიძლია Theme-დანაც წამოიღო)
     val containerColor = Color(0xFF25252D)
     val indicatorColor = Color(0xFF4A4458)
     val activeColor = Color(0xFFD0BCFF)

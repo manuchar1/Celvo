@@ -11,6 +11,7 @@ import com.celvo.core.designsystem.resources.nav_profile
 import com.celvo.core.designsystem.resources.nav_search
 import com.celvo.core.designsystem.resources.profile
 import com.celvo.core.designsystem.resources.search
+import com.mtislab.core.domain.model.Route
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 

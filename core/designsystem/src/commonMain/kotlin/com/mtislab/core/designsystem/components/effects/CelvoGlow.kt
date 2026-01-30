@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 fun CelvoGlow(
     color: Color,
     modifier: Modifier = Modifier,
-    radius: Dp = 150.dp, // Default ზომა
+    radius: Dp = 150.dp,
     alpha: Float = 0.2f
 ) {
     Box(
@@ -23,8 +23,8 @@ fun CelvoGlow(
             .background(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        color.copy(alpha = alpha), // ცენტრი
-                        Color.Transparent          // კიდეები
+                        color.copy(alpha = alpha),
+                        Color.Transparent
                     )
                 )
             )

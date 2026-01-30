@@ -22,9 +22,8 @@ val DarkColorScheme = darkColorScheme(
     surface = CelvoDark900,
     onSurface = CelvoWhite,
 
-    // Surface Variant - Figma: Dark800 (#272930) - ქარდები და ინფუთები
     surfaceVariant = CelvoDark800,
-    onSurfaceVariant = CelvoDark300, // მონაცრისფრო ტექსტი
+    onSurfaceVariant = CelvoDark300,
 
     error = CelvoRose500,
     onError = CelvoDark900,
@@ -35,19 +34,18 @@ val DarkColorScheme = darkColorScheme(
 val LightColorScheme = lightColorScheme(
     primary = CelvoPurple700,
     onPrimary = CelvoWhite,
-    primaryContainer = CelvoPurpleTint, // ტაბების უკანა ფონი
+    primaryContainer = CelvoPurpleTint,
     onPrimaryContainer = CelvoPurple1000,
 
     secondary = CelvoGreen700,
     onSecondary = CelvoWhite,
 
     background = CelvoWhite,
-    onBackground = CelvoLight900, // მუქი ტექსტი (#515354)
+    onBackground = CelvoLight900,
 
     surface = CelvoWhite,
     onSurface = CelvoLight900,
 
-    // Light Inputs/Search bar background (#F5F7F8)
     surfaceVariant = CelvoLightSurface,
     onSurfaceVariant = CelvoLight700,
 
@@ -57,8 +55,6 @@ val LightColorScheme = lightColorScheme(
     outline = CelvoLight300
 )
 
-// --- Extended Colors (Custom System) ---
-// აქ დავტოვე მხოლოდ ის, რაც რეალურად გვჭირდება და გავასუფთავე Chirp-ის ნაგავი.
 
 @Immutable
 data class ExtendedColors(
@@ -120,7 +116,7 @@ val LightExtendedColors = ExtendedColors(
     textOnColored = CelvoLight900,
 
     cardBackground = CelvoWhite,
-    cardBorder = CelvoLight300,
+    cardBorder = CelvoBorderLightAlpha,
     cardShadow = CelvoShadow,
     inputBackground = CelvoLightSurface,
     divider = CelvoLight300,

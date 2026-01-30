@@ -17,31 +17,28 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.mtislab.core.designsystem.theme.extended
 
-// Shape მაინც შეგვიძლია აქ დავტოვოთ ან Theme-ის Shapes.kt-ში გავიტანოთ.
-// ამ ეტაპზე აქ დატოვება მისაღებია, რადგან ეს მხოლოდ ამ ქარდს ეხება.
+
 private val CardShape = RoundedCornerShape(26.dp)
 
-// commonMain/.../components/cards/CelvoCard.kt
+
 @Composable
 fun CelvoCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
-    shape: Shape = CardShape, // CardShape ზემოთ განსაზღვრული (26.dp)
+    shape: Shape = CardShape,
     enabled: Boolean = true,
-    // 👇 ახალი პარამეტრი: თუ null-ია, გამოიყენებს default-ს, თუ არა - შენს მოწოდებულს
     border: BorderStroke? = null,
-    // 👇 ახალი პარამეტრი: Padding-ის მართვა გარედან (default 16.dp)
+    containerColor: Color = MaterialTheme.colorScheme.extended.cardBackground,
     contentPadding: PaddingValues = PaddingValues(16.dp),
     content: @Composable ColumnScope.() -> Unit
 ) {
     val colors = MaterialTheme.colorScheme.extended
 
-    // Default Border ლოგიკა (თუ გარედან არ მოგვაწოდეს)
     val finalBorder = border ?: BorderStroke(0.5.dp, colors.cardBorder)
 
     val shadowModifier = if (colors.cardShadow != Color.Transparent) {
         Modifier.shadow(
-            elevation = 4.dp,
+            elevation = 2.dp,
             shape = shape,
             spotColor = colors.cardShadow,
             ambientColor = colors.cardShadow,
@@ -58,12 +55,11 @@ fun CelvoCard(
             .fillMaxWidth()
             .then(shadowModifier),
         shape = shape,
-        color = colors.cardBackground,
-        border = finalBorder, // ვიყენებთ დინამიურ ბორდერს
+        color = containerColor,
+        border = finalBorder,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp
     ) {
-        // Padding-ს ვიღებთ პარამეტრიდან
         Column(modifier = Modifier.padding(contentPadding)) {
             content()
         }

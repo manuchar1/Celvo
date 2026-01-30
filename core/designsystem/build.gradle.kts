@@ -1,5 +1,7 @@
 plugins {
     alias(libs.plugins.convention.cmp.library)
+    alias(libs.plugins.convention.buildkonfig)
+
 }
 
 kotlin {
@@ -16,12 +18,19 @@ kotlin {
                 implementation(compose.components.resources)
                 implementation(compose.components.uiToolingPreview)
                 implementation(libs.coil.compose)
+
+                implementation(projects.core.domain)
+
             }
         }
 
         androidMain {
             dependencies {
                 implementation(compose.uiTooling)
+                implementation(libs.androidx.credentials)
+                implementation(libs.androidx.credentials.play.services.auth)
+                implementation(libs.googleid)
+                implementation(libs.androidx.browser)
             }
         }
 

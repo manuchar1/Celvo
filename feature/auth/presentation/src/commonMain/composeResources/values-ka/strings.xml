@@ -1,0 +1,8 @@
+<resources>
+    <string name="action_skip">გამოტოვება</string>
+    <string name="country_turkiye">თურქეთი</string>
+    <string name="country_germany">გერმანია</string>
+    <string name="country_georgia">საქართველო</string>
+    <string name="countries_500_plus">500+ ქვეყანა</string>
+
+</resources>

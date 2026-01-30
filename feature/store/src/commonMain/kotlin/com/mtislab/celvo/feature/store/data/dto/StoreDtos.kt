@@ -32,3 +32,18 @@ data class SupportedCountryDto(
     @SerialName("name") val name: String,
     @SerialName("flagUrl") val flagUrl: String
 )
+
+@Serializable
+data class PaymentInitiateRequestDto(
+    @SerialName("amount") val amount: Double,
+    @SerialName("sku") val sku: String,
+    @SerialName("bundleName") val bundleName: String,
+    @SerialName("currency") val currency: String,
+    @SerialName("language") val language: String,
+    @SerialName("theme") val theme: String
+)
+
+@Serializable
+data class PaymentInitiateResponseDto(
+    @SerialName("redirectUrl") val redirectUrl: String
+)

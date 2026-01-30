@@ -4,9 +4,14 @@ import com.mtislab.celvo.feature.store.domain.model.EsimPackage
 
 data class CheckoutState(
     val packageDetails: EsimPackage? = null,
-    // Auto Top-up State
     val isAutoTopupEnabled: Boolean = false,
-    val selectedTopupOption: TopupOption = TopupOptions.first()
+    val selectedTopupOption: TopupOption = TopupOptions.first(),
+
+    val isLoggedIn: Boolean = false,
+    val showLoginSheet: Boolean = false,
+
+    val isLoading: Boolean = false,
+    val error: String? = null
 )
 
 // დროებითი დატა კლასი ოფციებისთვის

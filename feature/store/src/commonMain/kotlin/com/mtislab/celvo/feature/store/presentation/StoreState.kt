@@ -9,6 +9,7 @@ enum class StoreTab {
 
 data class StoreState(
     val isLoading: Boolean = true,
+    val isLoggedIn: Boolean = false,
     val errorMessage: String? = null,
     val selectedTab: StoreTab = StoreTab.COUNTRIES,
     val marketingBanners: List<MarketingBanner> = emptyList(),

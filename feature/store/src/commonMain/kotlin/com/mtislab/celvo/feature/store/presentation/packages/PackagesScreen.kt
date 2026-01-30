@@ -3,14 +3,12 @@ package com.mtislab.celvo.feature.store.presentation.packages
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,25 +20,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,21 +47,23 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import celvo.feature.store.generated.resources.Res
 import celvo.feature.store.generated.resources.ic_fire
-import celvo.feature.store.generated.resources.ic_left_arrow
 import coil3.compose.AsyncImage
+import com.celvo.core.designsystem.resources.ic_left_arrow
 import com.mtislab.celvo.feature.store.domain.model.EsimPackage
-import com.mtislab.celvo.feature.store.presentation.checkout.CheckoutScreenRoot
 import com.mtislab.core.designsystem.components.cards.CelvoCard
 import com.mtislab.core.designsystem.components.switchers.CelvoTabSwitcher
 import com.mtislab.core.designsystem.theme.extended
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
+import com.celvo.core.designsystem.resources.Res as CoreRes
+
 
 @Composable
 fun PackagesScreenRoot(
     isoCode: String,
     countryName: String,
     onBackClick: () -> Unit,
+    onPackageSelected: (EsimPackage) -> Unit,
     viewModel: PackagesScreenViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -80,34 +74,32 @@ fun PackagesScreenRoot(
 
     PackagesScreenScreen(
         state = state,
-        isoCode = isoCode,
         countryName = countryName,
+        isoCode = isoCode, // [FIX] isoCode გადაცემა
         onAction = { action ->
             when (action) {
                 is PackagesScreenAction.BackClick -> onBackClick()
                 else -> viewModel.onAction(action)
             }
-        }
+        },
+        onPackageSelected = onPackageSelected // [NEW] გადავცემთ ქვემოთ
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class) // ეს დაამატე, რადგან ModalBottomSheet ამას ითხოვს
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PackagesScreenScreen(
     state: PackagesScreenState,
-    isoCode: String,
     countryName: String,
+    isoCode: String,
     onAction: (PackagesScreenAction) -> Unit,
+    onPackageSelected: (EsimPackage) -> Unit
 ) {
-    // [NEW] 1. ვქმნით ლოკალურ State-ს არჩეული პაკეტისთვის
-    var selectedPackage by remember { mutableStateOf<EsimPackage?>(null) }
+    // [REMOVED] ModalBottomSheet-ის state და selectedPackage ამოვიღეთ
 
     val flagUrl = remember(isoCode) {
         "https://flagcdn.com/h240/${isoCode.lowercase()}.png"
     }
-
-    // [NEW] 2. Sheet State, რომ სრულად გაიშალოს
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -175,31 +167,11 @@ fun PackagesScreenScreen(
                         PackageCard(
                             pkg = pkg,
                             onClick = {
-                                // [CHANGED] 3. ნავიგაციის ნაცვლად, ვანიჭებთ მნიშვნელობას selectedPackage-ს
-                                selectedPackage = pkg
+                                onPackageSelected(pkg)
                             }
                         )
                     }
                 }
-            }
-        }
-
-        // [NEW] 4. ModalBottomSheet-ის ინტეგრაცია
-        if (selectedPackage != null) {
-            ModalBottomSheet(
-                onDismissRequest = { selectedPackage = null },
-                sheetState = sheetState,
-
-                contentColor = MaterialTheme.colorScheme.extended.textPrimary,
-                //modifier = Modifier.fillMaxHeight(0.85f)
-            ) {
-                CheckoutScreenRoot(
-                    pkg = selectedPackage!!,
-                    countryName = countryName,
-                    onClose = { selectedPackage = null }
-                )
-                // პატარა დაშორება ბოლოში, რომ Gesture Bar-მა არ დაფაროს
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
@@ -211,30 +183,20 @@ fun PackageCard(
     onClick: () -> Unit
 ) {
     val isPopular = pkg.isBestValue
-
-    // Colors
     val successColor = MaterialTheme.colorScheme.extended.success
-    // ბორდერის ფერი ჩვეულებრივ რეჟიმში ავტომატურად მოდის CelvoCard-იდან,
-    // ჩვენ მხოლოდ Popular რეჟიმის ფერი გვჭირდება.
 
-    // Border Logic: თუ Popular-ია, ვაწვდით მწვანე ბორდერს, თუ არა - null-ს (და CelvoCard თავისას იზამს)
     val customBorder = if (isPopular) {
         BorderStroke(1.dp, successColor)
     } else {
-        null // გამოიყენებს CelvoCard-ის default 0.5dp transparent/gray ბორდერს
+        null
     }
 
     CelvoCard(
         onClick = onClick,
         border = customBorder,
-        // 👇 მნიშვნელოვანია: Padding-ს ვთიშავთ კარკასზე, რათა Glow კუთხეში მივიდეს
         contentPadding = PaddingValues(0.dp)
     ) {
-        // Box გვჭირდება Glow-ს და Content-ის დასალაგებლად
         Box(modifier = Modifier.fillMaxSize()) {
-
-            // ✨ GLOW EFFECT (მხოლოდ პოპულარულზე)
-            // ეს ახლა ზუსტად კუთხეში დაჯდება, რადგან contentPadding 0-ია
             if (isPopular) {
                 BestValueGlow(
                     color = successColor,
@@ -242,26 +204,19 @@ fun PackageCard(
                 )
             }
 
-            // 📦 CONTENT CONTAINER
-            // აქ ვამატებთ Padding-ს, რადგან კარკასზე გავთიშეთ
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
-                // --- Popular Badge ---
                 if (isPopular) {
                     PopularBadge()
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                // თუ popular არაა, Spacer-ი არ გვჭირდება, განლაგება ავტომატურად დაჯდება
-
-                // --- Main Info Row ---
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Left Side: Data & Validity
                     Column {
                         Text(
                             text = pkg.dataAmountDisplay,
@@ -281,7 +236,6 @@ fun PackageCard(
                         )
                     }
 
-                    // Right Side: Price & Discount
                     PriceSection(pkg)
                 }
             }
@@ -290,22 +244,14 @@ fun PackageCard(
 }
 
 @Composable
-fun BestValueGlow(
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    // Figma Glow Simulation using Radial Gradient
-    // ეს არის ყველაზე ეფექტური გზა Compose-ში Blur-ის სიმულაციისთვის
+fun BestValueGlow(color: Color, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(120.dp)
-            .offset(x = 30.dp, y = (-30).dp) // გადავწიოთ კუთხეში
+            .offset(x = 30.dp, y = (-30).dp)
             .background(
                 brush = Brush.radialGradient(
-                    colors = listOf(
-                        color.copy(alpha = 0.32f), // ცენტრი (Figma Opacity)
-                        Color.Transparent // ნაპირები
-                    ),
+                    colors = listOf(color.copy(alpha = 0.32f), Color.Transparent),
                     radius = 160f
                 )
             )
@@ -314,11 +260,9 @@ fun BestValueGlow(
 
 @Composable
 fun PriceSection(pkg: EsimPackage) {
-    // Logic: ფასდაკლება გვაქვს მხოლოდ მაშინ, თუ originalPrice არსებობს და მეტია ახლანდელ ფასზე
     val hasDiscount = pkg.originalPrice != null && pkg.originalPrice > pkg.price
 
     Row(verticalAlignment = Alignment.CenterVertically) {
-        // --- Discount Badge ---
         if (hasDiscount) {
             val percentText = pkg.discountPercent?.let { "-$it%" } ?: ""
             if (percentText.isNotEmpty()) {
@@ -328,7 +272,6 @@ fun PriceSection(pkg: EsimPackage) {
         }
 
         Column(horizontalAlignment = Alignment.End) {
-            // Current Price
             Text(
                 text = "${pkg.price} ${pkg.currency}",
                 style = MaterialTheme.typography.titleMedium.copy(
@@ -338,10 +281,8 @@ fun PriceSection(pkg: EsimPackage) {
                 color = MaterialTheme.colorScheme.extended.textPrimary
             )
 
-            // Old Price (Strikethrough)
             if (hasDiscount) {
                 val oldPrice = pkg.originalPrice
-                // ვაფორმატებთ ფასს, რომ ზედმეტი ნულები არ გამოჩნდეს
                 val formattedOld = if (oldPrice != null && oldPrice % 1.0 == 0.0) {
                     "${oldPrice.toInt()}"
                 } else {
@@ -408,7 +349,7 @@ fun DiscountBadge(text: String) {
                 fontWeight = FontWeight.Bold,
                 fontSize = 12.sp
             ),
-            color = Color.Black, // ყვითელზე შავი ტექსტი
+            color = Color.Black,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         )
     }
@@ -475,7 +416,7 @@ fun PackagesTopBar(
                 modifier = Modifier.padding(start = 8.dp)
             ) {
                 Icon(
-                    painter = painterResource(Res.drawable.ic_left_arrow),
+                    painter = painterResource(CoreRes.drawable.ic_left_arrow),
                     contentDescription = "Back",
                     tint = MaterialTheme.colorScheme.extended.textPrimary
                 )

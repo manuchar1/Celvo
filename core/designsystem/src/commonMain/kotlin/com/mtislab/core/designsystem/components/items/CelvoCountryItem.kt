@@ -2,10 +2,10 @@ package com.mtislab.core.designsystem.components.items
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +31,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.mtislab.core.designsystem.components.cards.CelvoCard
+import com.mtislab.core.designsystem.theme.extended
 
 @Composable
 fun CelvoCountryItem(
@@ -40,90 +42,75 @@ fun CelvoCountryItem(
     discountPercent: Int? = null,
     onClick: () -> Unit
 ) {
-    // Colors from Theme
-    val backgroundColor = MaterialTheme.colorScheme.surfaceVariant
-    val titleColor = MaterialTheme.colorScheme.onSurface
-    val subtitleColor = MaterialTheme.colorScheme.onSurfaceVariant
-    val arrowColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-    // Use outlineVariant for the thin border, similar to search bar
-    val borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+    val titleColor = MaterialTheme.colorScheme.extended.textPrimary
+    val subtitleColor = MaterialTheme.colorScheme.extended.textSecondary
+    val arrowColor = MaterialTheme.colorScheme.extended.textTertiary
 
-    // Figma Dimensions
-    val shape = RoundedCornerShape(26.dp) // Changed from 16.dp to 26.dp
-    val height = 72.dp
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(height)
-            .clip(shape)
-            .background(backgroundColor)
-            .border(0.5.dp, borderColor, shape) // Added thin border
-            .clickable { onClick() }
-            // Padding: 10px top/bottom, 16px left/right
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
+    // CelvoCard handles background, border, shadow, shape, and click logic
+    CelvoCard(
+        onClick = onClick,
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
     ) {
-        // 1. Flag Image
-        AsyncImage(
-            model = flagUrl,
-            contentDescription = null,
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .border(1.dp, Color.Black.copy(alpha = 0.1f), CircleShape),
-            contentScale = ContentScale.Crop
-        )
-
-        Spacer(modifier = Modifier.width(16.dp))
-
-        // 2. Name & Price
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Center
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = name,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = titleColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            Text(
-                text = price,
-                style = MaterialTheme.typography.bodySmall,
-                color = subtitleColor,
-                fontSize = 13.sp
-            )
-        }
-
-        // 3. Discount Badge (Optional) - Yellow Badge
-        if (discountPercent != null && discountPercent > 0) {
-            Box(
+            AsyncImage(
+                model = flagUrl,
+                contentDescription = null,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFFFFC107)) // Figma Yellow
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .size(30.dp)
+                    .clip(CircleShape)
+                    .border(1.dp, Color.Black.copy(alpha = 0.1f), CircleShape),
+                contentScale = ContentScale.Crop
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "-$discountPercent%",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    text = name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = titleColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = price,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = subtitleColor,
                 )
             }
-            Spacer(modifier = Modifier.width(12.dp))
-        }
 
-        // 4. Arrow Icon
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = arrowColor
-        )
+            if (discountPercent != null && discountPercent > 0) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.extended.warning)
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "-$discountPercent%",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+            }
+
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = arrowColor
+            )
+        }
     }
 }
