@@ -1,4 +1,3 @@
-// File: ui/MainScreen.kt
 package com.mtislab.celvo.ui
 
 import androidx.compose.foundation.background
@@ -23,23 +22,22 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
-import com.celvo.core.designsystem.resources.Res
-import com.celvo.core.designsystem.resources.nav_my_esim
-import com.celvo.core.designsystem.resources.nav_search
+import com.mtislab.celvo.PlatformEsimListScreen
 import com.mtislab.celvo.feature.auth.presentation.register.RegisterRoot
+import com.mtislab.celvo.feature.myesim.presentation.details.EsimDetailsRoot
 import com.mtislab.celvo.feature.profile.presentation.ProfileRoot
 import com.mtislab.celvo.feature.profile.presentation.settings.LanguageScreen
 import com.mtislab.celvo.feature.profile.presentation.settings.ThemeScreen
-import com.mtislab.celvo.feature.store.presentation.StoreScreenRoot
+import com.mtislab.celvo.feature.store.presentation.store.StoreScreenRoot
 import com.mtislab.celvo.feature.store.presentation.checkout.CheckoutScreenRoot
-import com.mtislab.celvo.feature.store.presentation.checkout.PaymentResultScreen // ✅ ახალი იმპორტი
+import com.mtislab.celvo.feature.store.presentation.checkout.PaymentResultScreen
 import com.mtislab.celvo.feature.store.presentation.packages.PackagesScreenRoot
+import com.mtislab.celvo.feature.store.presentation.search.SearchRoot
 import com.mtislab.celvo.navigation.bottomNavRoutes
 import com.mtislab.celvo.ui.components.CelvoBottomBar
 import com.mtislab.core.designsystem.theme.extended
 import com.mtislab.core.domain.model.Route
-import com.mtislab.core.domain.utils.DeepLinkHandler // ✅ ახალი იმპორტი
-import org.jetbrains.compose.resources.stringResource
+import com.mtislab.core.domain.utils.DeepLinkHandler
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -63,36 +61,23 @@ fun MainScreenScreen(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    // 🚀 Deep Link Listener (გლობალური მოსმენა)
+    // 🚀 Deep Link Listener
     LaunchedEffect(Unit) {
         DeepLinkHandler.events.collect { url ->
             println("🔗 DeepLink caught in UI: $url")
 
-            // ვამოწმებთ, არის თუ არა ეს გადახდის შედეგი
             if (url.contains("/payment/result") || url.contains("/payment/status")) {
-
-                // 🛑 ლოგიკა: როგორ გავიგოთ წარმატებული იყო თუ არა?
-                // ეს დამოკიდებულია იმაზე, რას აბრუნებს ბანკი URL-ში.
-                // როგორც წესი, ეს არის `status=success` ან `status=fail`.
-                // აქ შეგიძლია URL პარსერი გამოიყენო ან უბრალო string check.
-
-                // მაგალითად (თუ ბანკი აბრუნებს ?status=XXX):
                 val isSuccess = !url.contains("fail", ignoreCase = true) &&
                         !url.contains("error", ignoreCase = true)
 
-                // ამოვიღოთ Order ID (მარტივი string მანიპულაციით)
-                // მაგ: ...?order_id=12345&...
                 val orderId = url.substringAfter("order_id=", "").substringBefore("&")
 
-                // ✅ გადავდივართ Result ეკრანზე
                 navController.navigate(
                     Route.PaymentResult(
                         isSuccess = isSuccess,
                         orderId = if (orderId.isNotEmpty()) orderId else null
                     )
                 ) {
-                    // Checkout და Home სქრინების გასუფთავება სტეკიდან (სურვილისამებრ)
-                    // აქ ვტოვებთ Home-ს, მაგრამ ვაგდებთ Checkout-ს
                     popUpTo(Route.Home)
                 }
             }
@@ -139,7 +124,7 @@ fun MainScreenScreen(
                     .padding(bottom = innerPadding.calculateBottomPadding())
             ) {
 
-                // ... (Auth Graph იგივე რჩება) ...
+                // Auth Graph
                 navigation<Route.AuthGraph>(startDestination = Route.Login()) {
                     composable<Route.Login> { backStackEntry ->
                         val args = backStackEntry.toRoute<Route.Login>()
@@ -173,52 +158,67 @@ fun MainScreenScreen(
                     }
                 }
 
-                // ... (Home, Packages, Checkout იგივე რჩება) ...
                 composable<Route.Home> {
                     StoreScreenRoot(
-                        onNavigateToDetails = { isoCode, countryName ->
-                            navController.navigate(Route.Packages(isoCode, countryName))
+                        onNavigateToDetails = { isoCode, countryName, type ->
+                            navController.navigate(Route.Packages(isoCode, countryName, type))
                         },
                         onNavigateToLogin = {
                             navController.navigate(Route.Login(redirectTo = null))
-                        }
-                    )
-                }
 
-                composable<Route.Packages> { backStackEntry ->
-                    val args = backStackEntry.toRoute<Route.Packages>()
-                    PackagesScreenRoot(
-                        isoCode = args.isoCode,
-                        countryName = args.countryName,
-                        onBackClick = { navController.popBackStack() },
-                        onPackageSelected = { selectedPkg ->
+                        },
+
+                        onNavigateToSearch = { tab, focus ->
                             navController.navigate(
-                                Route.CheckoutRoute(
-                                    packageId = selectedPkg.id,
-                                    countryName = args.countryName
+                                Route.Search(
+                                    initialTab = tab,
+                                    focusSearch = focus
                                 )
                             )
                         }
                     )
                 }
 
+                // Packages
+                composable<Route.Packages> { backStackEntry ->
+                    val args = backStackEntry.toRoute<Route.Packages>()
+                    PackagesScreenRoot(
+                        isoCode = args.isoCode,
+                        countryName = args.countryName,
+                        type = args.type,
+                        onBackClick = { navController.popBackStack() },
+                        onPackageSelected = { selectedPkg ->
+                            navController.navigate(
+                                Route.CheckoutRoute(
+                                    packageId = selectedPkg.id,
+                                    countryName = args.countryName,
+                                    type = args.type,
+                                    region = args.isoCode
+
+                                )
+                            )
+                        }
+                    )
+                }
+
+                // Checkout
                 composable<Route.CheckoutRoute> { backStackEntry ->
                     val args = backStackEntry.toRoute<Route.CheckoutRoute>()
                     CheckoutScreenRoot(
                         countryName = args.countryName,
+                        type = args.type,
+                        region = args.region,
                         onClose = { navController.popBackStack() }
                     )
                 }
 
-                // 👇 ✅ ახალი: Payment Result Screen
+                // Payment Result
                 composable<Route.PaymentResult> { backStackEntry ->
                     val args = backStackEntry.toRoute<Route.PaymentResult>()
-
                     PaymentResultScreen(
                         isSuccess = args.isSuccess,
                         orderId = args.orderId,
                         onHomeClick = {
-                            // სრულად ვასუფთავებთ სტეკს და მივდივართ Home-ზე
                             navController.navigate(Route.Home) {
                                 popUpTo(Route.Home) { inclusive = true }
                             }
@@ -226,14 +226,31 @@ fun MainScreenScreen(
                     )
                 }
 
-                // ... (Search, MyEsim, Profile იგივე რჩება) ...
-                composable<Route.Search> {
-                    ScreenPlaceholder(stringResource(Res.string.nav_search))
+                // Search Screen
+                composable<Route.Search> { backStackEntry ->
+                    val args = backStackEntry.toRoute<Route.Search>()
+
+                    SearchRoot(
+                        initialTab = args.initialTab,
+                        focusSearch = args.focusSearch,
+                        onBackClick = { navController.popBackStack() },
+                        onNavigateToDetails = { isoCode, countryName, type ->
+                            navController.navigate(Route.Packages(isoCode, countryName, type))
+                        }
+                    )
                 }
+
 
                 composable<Route.MyEsim> {
                     if (state.isLoggedIn) {
-                        ScreenPlaceholder(stringResource(Res.string.nav_my_esim))
+                        PlatformEsimListScreen(
+                            onEsimClick = { esim ->
+                                navController.navigate(Route.EsimDetailsRoute(esimId = esim.id))
+                            },
+                            onAddEsimClick = {
+                                navController.navigate(Route.Home)
+                            }
+                        )
                     } else {
                         LaunchedEffect(Unit) {
                             navController.navigate(Route.Login(redirectTo = "my_esim")) {
@@ -243,6 +260,15 @@ fun MainScreenScreen(
                     }
                 }
 
+                // eSIM Details
+                composable<Route.EsimDetailsRoute> {
+                    EsimDetailsRoot(
+                        onBackClick = { navController.popBackStack() },
+                        onTopUpClick = { esimId -> /* TODO: Navigate to top-up */ }
+                    )
+                }
+
+                // Profile
                 composable<Route.Profile> {
                     if (state.isLoggedIn) {
                         ProfileRoot(
@@ -256,10 +282,12 @@ fun MainScreenScreen(
                     }
                 }
 
+                // Theme Settings
                 composable<Route.Theme> {
                     ThemeScreen(onBackClick = { navController.popBackStack() })
                 }
 
+                // Language Settings
                 composable<Route.Language> {
                     LanguageScreen(onBackClick = { navController.popBackStack() })
                 }

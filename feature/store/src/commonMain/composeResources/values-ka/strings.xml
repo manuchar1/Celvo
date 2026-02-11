@@ -8,6 +8,8 @@
     <string name="search_no_results">ვერაფერი მოიძებნა</string>
     <string name="search_no_results_desc">"%1$s"-ით არაფერი იძებნება</string>
     <string name="section_search_results">ძებნის შედეგები</string>
+    <string name="section_popular_countries">პოპულარული ქვეყნები</string>
+    <string name="section_popular_regions">პოპულარული რეგიონები</string>
     <string name="section_top_picks">საუკეთესო არჩევანი</string>
     <string name="section_all_countries">ყველა ქვეყანა</string>
     <string name="section_regional_plans">რეგიონალური პაკეტები</string>

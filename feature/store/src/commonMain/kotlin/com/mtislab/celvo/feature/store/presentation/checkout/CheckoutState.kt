@@ -14,7 +14,7 @@ data class CheckoutState(
     val error: String? = null
 )
 
-// დროებითი დატა კლასი ოფციებისთვის
+
 data class TopupOption(
     val id: String,
     val label: String,

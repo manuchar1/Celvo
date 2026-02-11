@@ -19,8 +19,8 @@ sealed interface Route {
     @Serializable
     data object Home : Route
 
-    @Serializable
-    data object Search : Route
+    /*    @Serializable
+        data object Search : Route*/
 
     @Serializable
     data object MyEsim : Route
@@ -31,16 +31,19 @@ sealed interface Route {
     @Serializable
     data class Packages(
         val isoCode: String,
-        val countryName: String
+        val countryName: String,
+        val type: String
     ) : Route
 
 
     @Serializable
     data class CheckoutRoute(
         val packageId: String,
-        val countryName: String
-    ) : Route
+        val countryName: String,
+        val type: String,
+        val region: String,
 
+        ) : Route
 
 
     @Serializable
@@ -55,6 +58,24 @@ sealed interface Route {
         val isSuccess: Boolean,
         val orderId: String? = null
     )
+
+
+    @Serializable
+    data class EsimDetailsRoute(
+        val esimId: String
+    ) : Route
+
+
+    @Serializable
+    data class Search(
+        val initialTab: SearchTab = SearchTab.COUNTRY,
+        val focusSearch: Boolean = false
+    ) : Route
+
+
+    enum class SearchTab {
+        COUNTRY, REGION
+    }
 
 
 }

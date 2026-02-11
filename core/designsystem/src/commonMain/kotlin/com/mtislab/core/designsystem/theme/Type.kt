@@ -54,7 +54,7 @@ val Typography.titleXSmall: TextStyle
     @Composable get() = TextStyle(
         fontFamily = PlusJakartaSans,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 14.sp,
+        fontSize = 16.sp,
         lineHeight = 18.sp
     )
 

@@ -30,5 +30,6 @@ include(":feature:chat:domain")
 include(":feature:chat:presentation")
 include(":feature:store")
 include(":feature:profile")
+include(":feature:myesim")
 
 includeBuild("build-logic")

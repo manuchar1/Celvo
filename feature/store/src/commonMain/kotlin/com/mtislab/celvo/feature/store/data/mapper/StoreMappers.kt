@@ -11,6 +11,7 @@ import com.mtislab.celvo.feature.store.domain.model.StoreItemType
 import androidx.compose.ui.graphics.Color
 import com.mtislab.celvo.feature.store.domain.model.BannerType
 import com.mtislab.celvo.feature.store.domain.model.MarketingBanner
+import com.mtislab.celvo.feature.store.domain.model.SupportedCountry
 
 fun CountriesResponseDto.toDomain(): StoreCountriesData {
     return StoreCountriesData(
@@ -32,7 +33,13 @@ fun DestinationDto.toDomain(): StoreItem {
         imageUrl = flagUrl,
         formattedPrice = "$minPrice $",
         type = if (type.equals("REGION", ignoreCase = true)) StoreItemType.REGION else StoreItemType.COUNTRY,
-        supportedCountriesCount = count
+        supportedCountriesCount = count,
+        supportedCountries = supportedCountries?.map { dto ->
+            SupportedCountry(
+                name = dto.name,
+                flagUrl = dto.flagUrl
+            )
+        } ?: emptyList()
     )
 }
 

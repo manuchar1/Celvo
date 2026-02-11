@@ -35,6 +35,7 @@ kotlin {
 
             implementation(projects.feature.store)
             implementation(projects.feature.profile)
+            implementation(projects.feature.myesim)
 
             implementation(compose.runtime)
             implementation(compose.foundation)

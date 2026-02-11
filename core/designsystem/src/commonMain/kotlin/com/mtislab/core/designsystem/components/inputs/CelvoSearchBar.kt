@@ -1,5 +1,6 @@
 package com.mtislab.core.designsystem.components.inputs
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -8,16 +9,20 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
@@ -26,7 +31,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.celvo.core.designsystem.resources.Res
-import com.celvo.core.designsystem.resources.ic_cancel
 import com.celvo.core.designsystem.resources.search
 import com.mtislab.core.designsystem.theme.extended
 import org.jetbrains.compose.resources.vectorResource
@@ -36,14 +40,23 @@ fun CelvoSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     placeholder: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    focusRequester: FocusRequester? = null
 ) {
     val focusManager = LocalFocusManager.current
     val interactionSource = remember { MutableInteractionSource() }
 
 
+    var isFocused by remember { mutableStateOf(false) }
+
     val containerColor = MaterialTheme.colorScheme.extended.inputBackground
-    val borderColor = MaterialTheme.colorScheme.outline
+    val defaultBorderColor = MaterialTheme.colorScheme.outline
+    val activeBorderColor = MaterialTheme.colorScheme.primary
+
+    val borderColor by animateColorAsState(
+        targetValue = if (isFocused) activeBorderColor else defaultBorderColor
+    )
+
     val contentColor = MaterialTheme.colorScheme.extended.textPrimary
     val placeholderColor = MaterialTheme.colorScheme.extended.textSecondary
     val iconColor = MaterialTheme.colorScheme.extended.textSecondary
@@ -55,7 +68,7 @@ fun CelvoSearchBar(
             .height(48.dp)
             .clip(CircleShape)
             .background(containerColor)
-            .border(0.5.dp, borderColor, CircleShape)
+            .border(if (isFocused) 1.dp else 0.5.dp, borderColor, CircleShape)
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -81,7 +94,10 @@ fun CelvoSearchBar(
             BasicTextField(
                 value = query,
                 onValueChange = onQueryChange,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier) // ✅ Apply Requester
+                    .onFocusChanged { isFocused = it.isFocused },
                 singleLine = true,
                 textStyle = TextStyle(
                     color = contentColor,

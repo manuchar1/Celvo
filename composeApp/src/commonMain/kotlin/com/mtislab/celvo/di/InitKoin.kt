@@ -2,6 +2,7 @@ package com.mtislab.celvo.di
 
 
 import com.mtislab.celvo.feature.auth.di.authPresentationModule
+import com.mtislab.celvo.feature.myesim.di.myEsimModule
 import com.mtislab.celvo.feature.profile.di.profileModule
 import com.mtislab.celvo.feature.store.di.storeModule
 import com.mtislab.core.data.di.coreDataModule
@@ -18,7 +19,8 @@ fun initKoin(config: KoinAppDeclaration? = null) {
             authModule,
             appModule,
             storeModule,
-            profileModule
+            profileModule,
+            myEsimModule
         )
     }
 }

@@ -21,13 +21,10 @@ val DarkColorScheme = darkColorScheme(
     onBackground = CelvoWhite,
     surface = CelvoDark900,
     onSurface = CelvoWhite,
-
     surfaceVariant = CelvoDark800,
     onSurfaceVariant = CelvoDark300,
-
     error = CelvoRose500,
     onError = CelvoDark900,
-
     outline = CelvoDark600
 )
 
@@ -36,44 +33,37 @@ val LightColorScheme = lightColorScheme(
     onPrimary = CelvoWhite,
     primaryContainer = CelvoPurpleTint,
     onPrimaryContainer = CelvoPurple1000,
-
     secondary = CelvoGreen700,
     onSecondary = CelvoWhite,
-
     background = CelvoWhite,
     onBackground = CelvoLight900,
-
     surface = CelvoWhite,
     onSurface = CelvoLight900,
-
     surfaceVariant = CelvoLightSurface,
     onSurfaceVariant = CelvoLight700,
-
     error = CelvoRose700,
     onError = CelvoWhite,
-
     outline = CelvoLight300
 )
 
 
 @Immutable
 data class ExtendedColors(
-    // Semantic Colors
-    val success: Color,
-    val warning: Color, // Discount badge
-    val destructive: Color,
 
+    val success: Color,
+    val warning: Color,
+    val destructive: Color,
     val textPrimary: Color,
     val textSecondary: Color,
     val textTertiary: Color,
     val textOnColored: Color,
-    // Containers
     val cardBackground: Color,
     val cardBorder: Color,
     val cardShadow: Color,
     val inputBackground: Color,
     val divider: Color,
     val gradientStart: Color,
+    val textLink: Color,
 
 
     )
@@ -89,36 +79,34 @@ val DarkExtendedColors = ExtendedColors(
     success = CelvoGreen500,
     warning = CelvoYellow,
     destructive = CelvoRose500,
-
     textPrimary = CelvoWhite,
     textSecondary = CelvoLight300,
-
     textTertiary = CelvoDark500,
     textOnColored = CelvoDark900,
-
     cardBackground = CelvoGlassWhite,
     cardBorder = CelvoBorderTransparent,
     cardShadow = Color.Transparent,
     inputBackground = CelvoDark800,
     divider = CelvoDark700,
-    gradientStart = CelvoGradientBase.copy(alpha = 0.2f)
+    gradientStart = CelvoGradientBase.copy(alpha = 0.2f),
+    textLink = CelvoPurple300
+
+
 )
 
 val LightExtendedColors = ExtendedColors(
     success = CelvoGreen700,
     warning = CelvoYellow,
     destructive = CelvoRose700,
-
     textPrimary = CelvoDark900,
     textSecondary = CelvoLight500,
-
     textTertiary = CelvoLight400,
     textOnColored = CelvoLight900,
-
     cardBackground = CelvoWhite,
     cardBorder = CelvoBorderLightAlpha,
     cardShadow = CelvoShadow,
     inputBackground = CelvoLightSurface,
     divider = CelvoLight300,
-    gradientStart = CelvoGradientBase.copy(alpha = 0.2f)
+    gradientStart = CelvoGradientBase.copy(alpha = 0.2f),
+    textLink = CelvoPurple900
 )

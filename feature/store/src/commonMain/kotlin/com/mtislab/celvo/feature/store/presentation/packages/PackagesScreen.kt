@@ -1,6 +1,7 @@
 package com.mtislab.celvo.feature.store.presentation.packages
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -50,9 +51,12 @@ import celvo.feature.store.generated.resources.ic_fire
 import coil3.compose.AsyncImage
 import com.celvo.core.designsystem.resources.ic_left_arrow
 import com.mtislab.celvo.feature.store.domain.model.EsimPackage
+import com.mtislab.celvo.feature.store.domain.model.StoreItemType
 import com.mtislab.core.designsystem.components.cards.CelvoCard
 import com.mtislab.core.designsystem.components.switchers.CelvoTabSwitcher
 import com.mtislab.core.designsystem.theme.extended
+import com.mtislab.core.designsystem.utils.getRegionIcon
+import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 import com.celvo.core.designsystem.resources.Res as CoreRes
@@ -62,6 +66,7 @@ import com.celvo.core.designsystem.resources.Res as CoreRes
 fun PackagesScreenRoot(
     isoCode: String,
     countryName: String,
+    type: String,
     onBackClick: () -> Unit,
     onPackageSelected: (EsimPackage) -> Unit,
     viewModel: PackagesScreenViewModel = koinViewModel()
@@ -72,17 +77,19 @@ fun PackagesScreenRoot(
         viewModel.onAction(PackagesScreenAction.LoadPackages(isoCode))
     }
 
+
     PackagesScreenScreen(
         state = state,
         countryName = countryName,
-        isoCode = isoCode, // [FIX] isoCode გადაცემა
+        type = type,
+        isoCode = isoCode,
         onAction = { action ->
             when (action) {
                 is PackagesScreenAction.BackClick -> onBackClick()
                 else -> viewModel.onAction(action)
             }
         },
-        onPackageSelected = onPackageSelected // [NEW] გადავცემთ ქვემოთ
+        onPackageSelected = onPackageSelected
     )
 }
 
@@ -91,22 +98,30 @@ fun PackagesScreenRoot(
 fun PackagesScreenScreen(
     state: PackagesScreenState,
     countryName: String,
+    type: String,
     isoCode: String,
     onAction: (PackagesScreenAction) -> Unit,
     onPackageSelected: (EsimPackage) -> Unit
 ) {
-    // [REMOVED] ModalBottomSheet-ის state და selectedPackage ამოვიღეთ
 
     val flagUrl = remember(isoCode) {
         "https://flagcdn.com/h240/${isoCode.lowercase()}.png"
     }
+
+    val regionIcon = remember(isoCode) {
+        getRegionIcon(isoCode)
+    }
+
+
 
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
             PackagesTopBar(
                 countryName = countryName,
+                regionIcon = regionIcon,
                 flagUrl = flagUrl,
+                type = type,
                 onBackClick = { onAction(PackagesScreenAction.BackClick) }
             )
         }
@@ -377,7 +392,9 @@ fun BadgeContainer(
 @Composable
 fun PackagesTopBar(
     countryName: String,
-    flagUrl: String,
+    regionIcon: DrawableResource,
+    flagUrl: Any,
+    type: String,
     onBackClick: () -> Unit
 ) {
     CenterAlignedTopAppBar(
@@ -389,14 +406,24 @@ fun PackagesTopBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                AsyncImage(
-                    model = flagUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                )
+
+                if (type == "REGION") {
+                    Image(
+                        painter = painterResource(regionIcon),
+                        contentDescription = type,
+                        modifier = Modifier.size(30.dp)
+                    )
+                } else {
+                    AsyncImage(
+                        model = flagUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(30.dp)
+                            .clip(CircleShape)
+                    )
+                }
+
 
                 Spacer(modifier = Modifier.width(12.dp))
 

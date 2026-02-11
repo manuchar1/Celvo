@@ -31,25 +31,34 @@ class HttpClientFactory(
             install(ContentNegotiation) {
                 json(Json { ignoreUnknownKeys = true; prettyPrint = true; isLenient = true })
             }
+
+            // შეცვლილი: გავზარდეთ Timeout 60 წამამდე, რომ "Request timeout" არ მივიღოთ
+            // სანამ რეფრეში მიმდინარეობს
             install(HttpTimeout) {
-                socketTimeoutMillis = 20_000L
-                requestTimeoutMillis = 20_000L
+                socketTimeoutMillis = 60_000L
+                requestTimeoutMillis = 60_000L
+                connectTimeoutMillis = 60_000L
             }
+
             install(Logging) {
                 logger = object : Logger {
                     override fun log(message: String) {
+                        // Debug ლეველი საკმარისია, რომ ლოგები არ გადაიტვირთოს
                         celvoLogger.debug(message)
                     }
                 }
                 level = LogLevel.ALL
             }
+
             install(WebSockets) { pingIntervalMillis = 20_000L }
 
             install(Auth) {
                 bearer {
                     loadTokens {
+                        // აქ ვიყენებთ განახლებულ SessionManager-ს (suspend ფუნქციებს)
                         val access = sessionManager.getAccessToken()
                         val refresh = sessionManager.getRefreshToken()
+
                         if (access != null && refresh != null) {
                             BearerTokens(access, refresh)
                         } else {
@@ -58,10 +67,22 @@ class HttpClientFactory(
                     }
 
                     refreshTokens {
-                        val newTokens = sessionManager.refreshSession()
-                        if (newTokens != null) {
-                            BearerTokens(newTokens.first, newTokens.second)
-                        } else {
+                        // კრიტიკული ცვლილება: Try-Catch და ლოგირება
+                        try {
+                            celvoLogger.debug("Auth: 🔄 Starting token refresh...")
+
+                            val newTokens = sessionManager.refreshSession()
+
+                            if (newTokens != null) {
+                                celvoLogger.info("Auth: ✅ Token refreshed successfully")
+                                BearerTokens(newTokens.first, newTokens.second)
+                            } else {
+                                celvoLogger.warn("Auth: ⚠️ Refresh returned null. Force logout needed.")
+                                null
+                            }
+                        } catch (e: Exception) {
+                            // აუცილებელია Exception-ის დაჭერა, თორემ Ktor-ი გაიჭედება და Timeout-ს ისვრის
+                            celvoLogger.error("Auth: ❌ Error during refresh", e)
                             null
                         }
                     }
@@ -71,7 +92,6 @@ class HttpClientFactory(
             defaultRequest {
                 header("x-api-key", BuildKonfig.API_KEY)
                 contentType(ContentType.Application.Json)
-
             }
         }
     }

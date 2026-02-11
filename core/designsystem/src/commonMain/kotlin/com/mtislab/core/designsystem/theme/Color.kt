@@ -5,18 +5,18 @@ import androidx.compose.ui.graphics.Color
 
 
 val CelvoGreen1000 = Color(0xFF52694D)
+
 val CelvoGreen900 = Color(0xFF6A8662)
 val CelvoGreen700 = Color(0xFF80A378)
 val CelvoGreen500 = Color(0xFF98C08D)
 val CelvoGreen300 = Color(0xFFADDDA1)
 
-// Purple - მთავარი UI ფერი (Primary Action)
+// Purple (Primary Action)
 val CelvoPurple1000 = Color(0xFF534F78)
 val CelvoPurple900 = Color(0xFF7E75B3)
 val CelvoPurple700 = Color(0xFF7D74B1)
 val CelvoPurple500 = Color(0xFF9087CD)
 val CelvoPurple300 = Color(0xFFA39AE9)
-
 val CelvoPurpleTint = Color(0xFFF3F0FF)
 
 // Rose (Red) - Error states
@@ -42,7 +42,7 @@ val CelvoLight900 = Color(0xFF515354) // Main Text
 val CelvoLight700 = Color(0xFF6E7071) // Secondary Text
 val CelvoLight500 = Color(0xFF898C8E)
 val CelvoLight400 = Color(0xFFA5A9AB)
-val CelvoLight300 = Color(0xFFC1C5C8) // Borders
+val CelvoLight300 = Color(0xFFC1C5C8)
 val CelvoWhite = Color(0xFFFFFFFF)
 val CelvoLightSurface = Color(0xFFF5F7F8)
 
@@ -61,3 +61,15 @@ val CelvoBorderDarkAlpha = Color(0x26C1C5C8)
 val CelvoGlassWhite = Color(0x1AFFFFFF) // 10% White opacity for Dark Mode Cards
 val CelvoBorderTransparent = Color(0x26C1C5C8) // Transparent Grey for Dark Mode Borders
 val CelvoShadow = Color(0x0D0C0C0D) // Special Shadow Color
+
+
+// Opacity variants for UI elements
+val CelvoPurple500Alpha15 = CelvoPurple500.copy(alpha = 0.15f)
+val CelvoGreen500Alpha15 = CelvoGreen500.copy(alpha = 0.15f)
+val CelvoRose500Alpha15 = CelvoRose500.copy(alpha = 0.15f)
+val CelvoLight300Alpha15 = CelvoLight300.copy(alpha = 0.15f)
+
+// For Light mode
+val CelvoPurple700Alpha15 = CelvoPurple700.copy(alpha = 0.15f)
+val CelvoGreen700Alpha15 = CelvoGreen700.copy(alpha = 0.15f)
+val CelvoRose700Alpha15 = CelvoRose700.copy(alpha = 0.15f)

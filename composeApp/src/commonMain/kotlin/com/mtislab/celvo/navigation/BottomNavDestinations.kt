@@ -27,11 +27,11 @@ val bottomNavRoutes = listOf(
         route = Route.Home,
         icon = Res.drawable.home
     ),
-    TopLevelRoute(
+/*    TopLevelRoute(
         name = Res.string.nav_search,
         route = Route.Search,
         icon = Res.drawable.search
-    ),
+    ),*/
     TopLevelRoute(
         name = Res.string.nav_my_esim,
         route = Route.MyEsim,

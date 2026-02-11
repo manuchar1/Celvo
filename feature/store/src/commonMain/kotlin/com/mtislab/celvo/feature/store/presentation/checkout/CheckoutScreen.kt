@@ -75,6 +75,7 @@ import com.mtislab.core.designsystem.components.cards.CelvoCard
 import com.mtislab.core.designsystem.theme.CelvoPurple500
 import com.mtislab.core.designsystem.theme.PlusJakartaSans
 import com.mtislab.core.designsystem.theme.extended
+import com.mtislab.core.designsystem.utils.getRegionIcon
 import com.mtislab.core.designsystem.utils.rememberBrowserOpener
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -85,18 +86,20 @@ import com.celvo.core.designsystem.resources.Res as CoreRes
 @Composable
 fun CheckoutScreenRoot(
     countryName: String,
+    type: String,
+    region: String,
     onClose: () -> Unit,
     viewModel: CheckoutViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // ✅ 1. Google Provider და Browser Opener
     val googleAuthProvider = rememberGoogleAuthProvider()
     val openBrowser = rememberBrowserOpener()
 
-    // ✅ 2. პლატფორმის შემოწმება
+
     val isAndroid = remember { platform().contains("Android", ignoreCase = true) }
+
 
     // ✅ 3. Event Listener (URL-ის გასახსნელად)
     LaunchedEffect(viewModel.events) {
@@ -107,6 +110,7 @@ fun CheckoutScreenRoot(
                     openBrowser(event.url)
                     // არ ვხურავთ ეკრანს, ველოდებით DeepLink-ს
                 }
+
                 is CheckoutEvent.ShowError -> {
                     snackbarHostState.showSnackbar(event.message)
                 }
@@ -122,6 +126,8 @@ fun CheckoutScreenRoot(
         CheckoutContent(
             state = state,
             countryName = countryName,
+            type = type,
+            region = region,
             isAndroid = isAndroid,
             snackbarHostState = snackbarHostState,
             onClose = onClose,
@@ -131,6 +137,7 @@ fun CheckoutScreenRoot(
                         val provider = if (isAndroid) googleAuthProvider else null
                         viewModel.onAction(CheckoutAction.LoginWithGoogle(provider))
                     }
+
                     else -> viewModel.onAction(action)
                 }
             }
@@ -142,6 +149,8 @@ fun CheckoutScreenRoot(
 private fun CheckoutContent(
     state: CheckoutState,
     countryName: String,
+    type: String,
+    region: String,
     isAndroid: Boolean,
     snackbarHostState: SnackbarHostState,
     onClose: () -> Unit,
@@ -150,7 +159,6 @@ private fun CheckoutContent(
     val pkg = state.packageDetails ?: return
     val scrollState = rememberScrollState()
 
-    // ✅ Login Bottom Sheet
     if (state.showLoginSheet) {
         LoginBottomSheet(
             onDismiss = { onAction(CheckoutAction.DismissLoginSheet) },
@@ -197,7 +205,7 @@ private fun CheckoutContent(
             Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
 
             CheckoutHeader(onClose = onClose)
-            ProductInfoCard(pkg, countryName)
+            ProductInfoCard(pkg, countryName, type, region)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -312,9 +320,17 @@ fun PaymentMethodItem(
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.extended.textPrimary)
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.extended.textPrimary
+            )
             if (subtitle != null) {
-                Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.extended.textSecondary)
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.extended.textSecondary
+                )
             }
         }
         RadioButton(
@@ -333,21 +349,34 @@ fun PromoCodeCard(promoCode: String?, onClick: () -> Unit) {
     CelvoCard(onClick = onClick, contentPadding = PaddingValues(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Box(
-                modifier = Modifier.size(40.dp).clip(CircleShape).background(CelvoPurple500.copy(alpha = 0.15f)),
+                modifier = Modifier.size(40.dp).clip(CircleShape)
+                    .background(CelvoPurple500.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(painter = painterResource(Res.drawable.ic_promo_code), contentDescription = null, tint = Color.Unspecified)
+                Icon(
+                    painter = painterResource(Res.drawable.ic_promo_code),
+                    contentDescription = null,
+                    tint = Color.Unspecified
+                )
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = "პრომოკოდი", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.extended.textSecondary)
+                Text(
+                    text = "პრომოკოდი",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.extended.textSecondary
+                )
                 Text(
                     text = promoCode?.takeIf { it.isNotEmpty() } ?: "შეიყვანეთ კოდი",
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                     color = if (!promoCode.isNullOrEmpty()) MaterialTheme.colorScheme.extended.textPrimary else MaterialTheme.colorScheme.extended.textTertiary
                 )
             }
-            Icon(imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.extended.textSecondary)
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.extended.textSecondary
+            )
         }
     }
 }
@@ -357,8 +386,18 @@ fun OrderSummary(price: Double, discount: Double, promoDiscount: Double, currenc
     val total = (price - discount - promoDiscount).coerceAtLeast(0.0)
     Column(modifier = Modifier.fillMaxWidth()) {
         SummaryRow("პაკეტის საფასური", "${formatPrice(price)}$currencySymbol", isTotal = false)
-        if (discount > 0) SummaryRow("ფასდაკლება", "-${formatPrice(discount)}$currencySymbol", valueColor = CelvoPurple500, isTotal = false)
-        if (promoDiscount > 0) SummaryRow("პრომოკოდი", "-${formatPrice(promoDiscount)}$currencySymbol", valueColor = MaterialTheme.colorScheme.extended.destructive, isTotal = false)
+        if (discount > 0) SummaryRow(
+            "ფასდაკლება",
+            "-${formatPrice(discount)}$currencySymbol",
+            valueColor = CelvoPurple500,
+            isTotal = false
+        )
+        if (promoDiscount > 0) SummaryRow(
+            "პრომოკოდი",
+            "-${formatPrice(promoDiscount)}$currencySymbol",
+            valueColor = MaterialTheme.colorScheme.extended.destructive,
+            isTotal = false
+        )
         Spacer(modifier = Modifier.height(8.dp))
         SummaryRow("ჯამური თანხა", "${formatPrice(total)}$currencySymbol", isTotal = true)
     }
@@ -410,75 +449,187 @@ fun CheckoutHeader(onClose: () -> Unit) {
             text = "ყიდვა",
             modifier = Modifier.align(Alignment.Center),
             color = MaterialTheme.colorScheme.extended.textPrimary,
-            style = TextStyle(fontFamily = PlusJakartaSans, fontWeight = FontWeight.Medium, fontSize = 18.sp, lineHeight = 24.sp)
+            style = TextStyle(
+                fontFamily = PlusJakartaSans,
+                fontWeight = FontWeight.Medium,
+                fontSize = 18.sp,
+                lineHeight = 24.sp
+            )
         )
     }
 }
 
 @Composable
-fun ProductInfoCard(pkg: EsimPackage, countryName: String) {
+fun ProductInfoCard(
+    pkg: EsimPackage,
+    countryName: String,
+    type: String,
+    region: String
+) {
     CelvoCard(modifier = Modifier.fillMaxWidth()) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Column {
                 Text(
                     text = pkg.dataAmountDisplay,
-                    style = TextStyle(fontFamily = PlusJakartaSans, fontWeight = FontWeight.Bold, fontSize = 22.sp, lineHeight = 28.sp),
+                    style = TextStyle(
+                        fontFamily = PlusJakartaSans,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp,
+                        lineHeight = 28.sp
+                    ),
                     color = MaterialTheme.colorScheme.extended.textPrimary
                 )
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(text = pkg.validityDisplay, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.extended.textSecondary)
+                Text(
+                    text = pkg.validityDisplay,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.extended.textSecondary
+                )
             }
-            CountryBadge(isoCode = pkg.isoCode, countryName = countryName)
+            CountryBadge(
+                isoCode = pkg.isoCode,
+                countryName = countryName,
+                type = type,
+                region = region
+            )
+
         }
         Spacer(modifier = Modifier.height(24.dp))
         CheckoutInfoRow(icon = Res.drawable.ic_speed, label = "სიჩქარე", value = "5G / LTE")
         CheckoutDivider()
         val firstOperator = pkg.operators.firstOrNull()?.name ?: "Network"
         val extraCount = (pkg.operators.size - 1).coerceAtLeast(0)
-        CheckoutInfoRow(icon = Res.drawable.ic_network, label = "ქსელები", value = if (extraCount > 0) "$firstOperator... +$extraCount" else firstOperator, isClickable = true)
+        CheckoutInfoRow(
+            icon = Res.drawable.ic_network,
+            label = "ქსელები",
+            value = if (extraCount > 0) "$firstOperator... +$extraCount" else firstOperator,
+            isClickable = true
+        )
         CheckoutDivider()
-        CheckoutInfoRow(icon = Res.drawable.ic_phone, label = "შენი მოწყობილობა", value = "eSIM თავსებადი")
+        CheckoutInfoRow(
+            icon = Res.drawable.ic_phone,
+            label = "შენი მოწყობილობა",
+            value = "eSIM თავსებადი"
+        )
     }
 }
 
 @Composable
 fun ValidityStartInfoBox() {
     Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(CircleShape).background(CelvoPurple500.copy(alpha = 0.15f)).padding(horizontal = 12.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(CircleShape)
+            .background(CelvoPurple500.copy(alpha = 0.15f))
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Icon(painter = painterResource(Res.drawable.ic_info_circle), contentDescription = null, tint = CelvoPurple500)
-        Text(text = "მოქმედების ვადა დაიწყება eSIM-ის ქსელთან დაკავშირების მომენტიდან.", style = MaterialTheme.typography.bodySmall.copy(lineHeight = 18.sp), color = MaterialTheme.colorScheme.extended.textPrimary)
+        Icon(
+            painter = painterResource(Res.drawable.ic_info_circle),
+            contentDescription = null,
+            tint = CelvoPurple500
+        )
+        Text(
+            text = "მოქმედების ვადა დაიწყება eSIM-ის ქსელთან დაკავშირების მომენტიდან.",
+            style = MaterialTheme.typography.bodySmall.copy(lineHeight = 18.sp),
+            color = MaterialTheme.colorScheme.extended.textPrimary
+        )
     }
 }
 
 @Composable
 fun CheckoutDivider() {
-    HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+    HorizontalDivider(
+        modifier = Modifier.padding(vertical = 16.dp),
+        thickness = 0.5.dp,
+        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
+    )
 }
 
 @Composable
-fun CheckoutInfoRow(icon: DrawableResource, label: String, value: String, isClickable: Boolean = false, onClick: () -> Unit = {}) {
-    Row(modifier = Modifier.fillMaxWidth().then(if (isClickable) Modifier.clickable(onClick = onClick) else Modifier), verticalAlignment = Alignment.CenterVertically) {
-        Image(painter = painterResource(icon), contentDescription = null, modifier = Modifier.size(40.dp), colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.extended.textSecondary))
+fun CheckoutInfoRow(
+    icon: DrawableResource,
+    label: String,
+    value: String,
+    isClickable: Boolean = false,
+    onClick: () -> Unit = {}
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .then(if (isClickable) Modifier.clickable(onClick = onClick) else Modifier),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(
+            painter = painterResource(icon),
+            contentDescription = null,
+            modifier = Modifier.size(40.dp),
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.extended.textSecondary)
+        )
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.extended.textSecondary)
-            Text(text = value, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium), color = MaterialTheme.colorScheme.extended.textPrimary)
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.extended.textSecondary
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.extended.textPrimary
+            )
         }
-        if (isClickable) Icon(imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = "Details", tint = MaterialTheme.colorScheme.extended.textSecondary, modifier = Modifier.size(24.dp))
+        if (isClickable) Icon(
+            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+            contentDescription = "Details",
+            tint = MaterialTheme.colorScheme.extended.textSecondary,
+            modifier = Modifier.size(24.dp)
+        )
     }
 }
 
 @Composable
-fun CountryBadge(isoCode: String, countryName: String) {
+fun CountryBadge(
+    isoCode: String,
+    countryName: String,
+    type: String,
+    region: String,
+) {
     val flagUrl = remember(isoCode) { "https://flagcdn.com/h240/${isoCode.lowercase()}.png" }
-    Box(modifier = Modifier.clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.extended.textPrimary.copy(alpha = 0.05f)).padding(horizontal = 12.dp, vertical = 6.dp)) {
+    val iconResource = remember(countryName) { getRegionIcon(region) }
+    Box(
+        modifier = Modifier.clip(RoundedCornerShape(50))
+            .background(MaterialTheme.colorScheme.extended.textPrimary.copy(alpha = 0.05f))
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            AsyncImage(model = flagUrl, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(20.dp).clip(CircleShape))
+            if (type == "REGION") {
+                Image(
+                    painter = painterResource(iconResource),
+                    contentDescription = countryName,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(20.dp).clip(CircleShape)
+                )
+            } else {
+                AsyncImage(
+                    model = flagUrl,
+                    contentDescription = countryName,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(20.dp).clip(CircleShape)
+                )
+            }
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = countryName, style = TextStyle(fontFamily = PlusJakartaSans, fontWeight = FontWeight.Medium, fontSize = 14.sp), color = MaterialTheme.colorScheme.extended.textPrimary)
+            Text(
+                text = countryName,
+                style = TextStyle(
+                    fontFamily = PlusJakartaSans,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp
+                ),
+                color = MaterialTheme.colorScheme.extended.textPrimary
+            )
         }
     }
 }

@@ -1,6 +1,6 @@
 package com.mtislab.celvo.feature.profile.presentation
 
-// 👇 ახალი იმპორტები (დარწმუნდი რომ პაკეტები სწორია)
+
 import AppTheme
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -86,7 +86,6 @@ fun ProfileScreen(
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Header (ფიქსირებული, როგორც გინდოდა)
         ProfileHeader(
             onSupportClick = { /* TODO */ }
         )
@@ -95,9 +94,9 @@ fun ProfileScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f) // შენი სქროლის ლოგიკა დაცულია
+                .weight(1f)
                 .verticalScroll(scrollState)
-                .padding(bottom = 40.dp) // შენი padding დაცულია
+                .padding(bottom = 40.dp)
         ) {
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -141,18 +140,17 @@ fun ProfileScreen(
                         onClick = { /* TODO */ }
                     )
 
-                    // ✅ მუქი რეჟიმი (განახლებული - Switch-ის გარეშე)
                     ProfileMenuItem(
                         icon = painterResource(Res.drawable.ic_moon),
                         title = "მუქი რეჟიმი",
-                        isSwitch = false, // 🛑 სვიჩი გავთიშეთ
+                        isSwitch = false,
                         // ვაჩვენებთ ტექსტს მიმდინარე თემის მიხედვით
                         trailingText = when(settingsState.appTheme) {
                             AppTheme.DARK -> "ჩართულია"
                             AppTheme.LIGHT -> "გამორთულია"
                             AppTheme.SYSTEM -> "ავტომატური"
                         },
-                        onClick = onNavigateToTheme // 🚀 ნავიგაცია
+                        onClick = onNavigateToTheme
                     )
 
                     // ✅ ენა (განახლებული - უკავშირდება ViewModel-ს)

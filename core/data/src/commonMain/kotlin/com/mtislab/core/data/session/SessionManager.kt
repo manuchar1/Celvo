@@ -6,35 +6,45 @@ import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class SessionManager(
     private val tokenStorage: TokenStorage,
     private val supabase: SupabaseClient,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 ) {
-    private var cachedAccessToken: String? = null
-    private var cachedRefreshToken: String? = null
+    // 1. Mutex დავიცვათ Refresh პროცესი ერთდროული გამოძახებებისგან
+    private val refreshMutex = Mutex()
 
+    // 2. აღარ გვჭირდება ცალკე cached variables. StateFlow თავად არის cache.
+    // ვიყენებთ stateIn-ს რომ ყოველთვის გვქონდეს ბოლო მნიშვნელობა.
     val state: StateFlow<AuthState> = combine(
         tokenStorage.getAccessToken(),
         tokenStorage.getRefreshToken(),
         tokenStorage.getUserId()
     ) { accessToken, refreshToken, userId ->
-        cachedAccessToken = accessToken
-        cachedRefreshToken = refreshToken
-
         if (accessToken != null && userId != null) {
             AuthState.Authenticated(userId)
         } else {
             AuthState.Guest
         }
     }.stateIn(scope, SharingStarted.Eagerly, AuthState.Initial)
+
+    // 3. Helper რომ მივიღოთ ტოკენები პირდაპირ Flow-დან სინქრონულად (StateFlow.value)
+    // მაგრამ DataStore-ს სჭირდება დრო ინიციალიზაციისთვის, ამიტომ suspend ჯობია.
+
+    suspend fun getAccessToken(): String? {
+        // თუ Flow ჯერ Initial state-შია, ველოდებით მონაცემს
+        val token = tokenStorage.getAccessToken().first()
+        return token
+    }
+
+    suspend fun getRefreshToken(): String? {
+        return tokenStorage.getRefreshToken().first()
+    }
 
     fun onLoginSuccess(accessToken: String, refreshToken: String, userId: String) {
         scope.launch {
@@ -47,31 +57,36 @@ class SessionManager(
             try {
                 supabase.auth.signOut()
             } catch (e: Exception) {
+                // Ignore network errors during logout
             }
             tokenStorage.clearSession()
         }
     }
 
-
     suspend fun refreshSession(): Pair<String, String>? {
-        return try {
-            supabase.auth.refreshCurrentSession()
+        // Mutex უზრუნველყოფს რომ მხოლოდ ერთი Refresh მოხდეს ერთდროულად
+        return refreshMutex.withLock {
+            try {
+                // ვამოწმებთ, ხომ არ განახლდა უკვე ტოკენი სანამ რიგში ვიდექით?
+                val currentAccess = getAccessToken()
+                // აქ შეიძლება შემოწმება: თუ currentAccess ვალიდურია, დააბრუნე ის.
 
-            val session = supabase.auth.currentSessionOrNull() ?: return null
+                // ვცდილობთ Supabase Refresh-ს
+                supabase.auth.refreshCurrentSession()
 
-            val newAccess = session.accessToken
-            val newRefresh = session.refreshToken
-            val userId = session.user?.id ?: return null
+                val session = supabase.auth.currentSessionOrNull() ?: return null
+                val newAccess = session.accessToken
+                val newRefresh = session.refreshToken
+                val userId = session.user?.id ?: return null
 
-            tokenStorage.saveSession(newAccess, newRefresh, userId)
+                // ვინახავთ ლოკალურად
+                tokenStorage.saveSession(newAccess, newRefresh, userId)
 
-            newAccess to newRefresh
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
+                newAccess to newRefresh
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
         }
     }
-
-    fun getAccessToken(): String? = cachedAccessToken
-    fun getRefreshToken(): String? = cachedRefreshToken
 }

@@ -1,5 +1,6 @@
 package com.mtislab.core.designsystem.components.items
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -29,46 +30,59 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.mtislab.core.designsystem.components.cards.CelvoCard
 import com.mtislab.core.designsystem.theme.extended
+import com.mtislab.core.designsystem.utils.getRegionIcon
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun CelvoCountryItem(
     name: String,
-    price: String,
-    flagUrl: String,
+    id: String? = null,
+    imageUrl: String? = null,
+    price: String? = null,
     discountPercent: Int? = null,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val titleColor = MaterialTheme.colorScheme.extended.textPrimary
     val subtitleColor = MaterialTheme.colorScheme.extended.textSecondary
     val arrowColor = MaterialTheme.colorScheme.extended.textTertiary
 
-    // CelvoCard handles background, border, shadow, shape, and click logic
     CelvoCard(
         onClick = onClick,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AsyncImage(
-                model = flagUrl,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(30.dp)
-                    .clip(CircleShape)
-                    .border(1.dp, Color.Black.copy(alpha = 0.1f), CircleShape),
-                contentScale = ContentScale.Crop
-            )
 
-            Spacer(modifier = Modifier.width(16.dp))
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = null,
+                    modifier = modifier
+                        .size(30.dp)
+                        .clip(CircleShape)
+                        .border(1.dp, Color.Black.copy(alpha = 0.1f), CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            } else if (id != null) {
+                val iconResource = getRegionIcon(id)
+                Image(
+                    painter = painterResource(iconResource),
+                    contentDescription = name,
+                    modifier = Modifier.size(30.dp)
+                )
+            }
+
+
+            Spacer(modifier = modifier.width(16.dp))
 
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = modifier.weight(1f),
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
@@ -80,18 +94,20 @@ fun CelvoCountryItem(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = price,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = subtitleColor,
-                )
+                // ✅ Only show price if not null
+                if (price != null) {
+                    Spacer(modifier = modifier.height(4.dp))
+                    Text(
+                        text = price,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = subtitleColor,
+                    )
+                }
             }
 
             if (discountPercent != null && discountPercent > 0) {
                 Box(
-                    modifier = Modifier
+                    modifier = modifier
                         .clip(RoundedCornerShape(8.dp))
                         .background(MaterialTheme.colorScheme.extended.warning)
                         .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -103,7 +119,7 @@ fun CelvoCountryItem(
                         color = Color.Black
                     )
                 }
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = modifier.width(12.dp))
             }
 
             Icon(
