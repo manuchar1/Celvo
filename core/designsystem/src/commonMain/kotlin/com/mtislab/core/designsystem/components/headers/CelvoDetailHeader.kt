@@ -29,7 +29,7 @@ fun CelvoDetailHeader(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .statusBarsPadding()
+            //.statusBarsPadding()
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         CelvoActionIconButton(

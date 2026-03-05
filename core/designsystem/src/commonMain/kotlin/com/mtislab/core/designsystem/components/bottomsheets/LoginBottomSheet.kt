@@ -34,8 +34,7 @@ import com.mtislab.core.designsystem.theme.CelvoPurple500
 import com.mtislab.core.designsystem.theme.PlusJakartaSans
 import com.mtislab.core.designsystem.theme.extended
 import org.jetbrains.compose.resources.vectorResource
-// import celvo.core.designsystem.generated.resources.ic_google (დაამატე ეს რესურსი)
-// import celvo.core.designsystem.generated.resources.ic_apple (დაამატე ეს რესურსი)
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

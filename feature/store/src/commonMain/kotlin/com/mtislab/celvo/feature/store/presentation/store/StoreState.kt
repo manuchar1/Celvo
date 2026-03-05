@@ -3,6 +3,7 @@ package com.mtislab.celvo.feature.store.presentation.store
 import com.mtislab.celvo.feature.store.domain.model.MarketingBanner
 import com.mtislab.celvo.feature.store.domain.model.StoreItem
 import com.mtislab.core.domain.model.ActiveEsimHome
+import com.mtislab.core.domain.model.UserEsim
 
 sealed interface StoreState {
 
@@ -12,14 +13,26 @@ sealed interface StoreState {
 
     data class Content(
         val isLoggedIn: Boolean = false,
-
-        // If non-null and hasActiveBundle == true → show Usage Gauge section (Figma: Purchased).
-        // If null or hasActiveBundle == false → show "მიიღე +1GB საჩუქრად" banner (Figma: Guest).
         val activeEsimHome: ActiveEsimHome? = null,
-
+        val selectedEsimIndex: Int = 0,
+        val isRefreshing: Boolean = false,
+        val isDataStale: Boolean = false,
+        val showEsimSwitcher: Boolean = false,
         val marketingBanners: List<MarketingBanner> = emptyList(),
         val regions: List<StoreItem> = emptyList(),
         val topPicks: List<StoreItem> = emptyList(),
-        val allCountries: List<StoreItem> = emptyList()
-    ) : StoreState
+        val allCountries: List<StoreItem> = emptyList(),
+        val isInstalling: Boolean = false,
+        val installingEsimId: String? = null,
+        val installationError: String? = null,
+        val claimedPromoCode: String? = null
+    ) : StoreState {
+
+        /** The currently displayed eSIM based on [selectedEsimIndex]. */
+        val selectedEsim: UserEsim?
+            get() = activeEsimHome?.esims?.getOrNull(selectedEsimIndex)
+
+
+
+    }
 }

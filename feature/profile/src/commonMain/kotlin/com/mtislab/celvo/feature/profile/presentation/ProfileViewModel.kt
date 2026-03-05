@@ -3,7 +3,7 @@ package com.mtislab.celvo.feature.profile.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mtislab.celvo.feature.profile.domain.repository.ProfileRepository
-import com.mtislab.core.data.session.SessionManager
+import com.mtislab.core.domain.auth.SessionController
 import com.mtislab.core.domain.utils.Resource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(
-    private val sessionManager: SessionManager,
+    private val sessionController: SessionController,
     private val profileRepository: ProfileRepository
 ) : ViewModel() {
 
@@ -40,9 +40,7 @@ class ProfileViewModel(
 
     private fun loadProfile() {
         viewModelScope.launch {
-            _state.update {
-                it.copy(isLoading = true, error = null)
-            }
+            _state.update { it.copy(isLoading = true, error = null) }
 
             when (val result = profileRepository.getUserProfile()) {
                 is Resource.Success -> {
@@ -68,7 +66,11 @@ class ProfileViewModel(
 
     private fun logout() {
         viewModelScope.launch {
-            sessionManager.logout()
+            _state.update { it.copy(isLoading = true) }
+            sessionController.logout()
+            _state.update { ProfileState() }
+            // Navigation to login screen is driven by AuthState observer
+            // in MainScreenViewModel — no need to emit an event here.
         }
     }
 }

@@ -69,6 +69,11 @@ buildkonfig = "0.17.1"
 kermit = "2.0.8"
 firebaseAuthCommon = "9.8.0"
 
+
+
+google-pay-wallet = "19.5.0"
+google-pay-compose-button = "1.2.0"
+
 [libraries]
 android-desugarJdkLibs = { group = "com.android.tools", name = "desugar_jdk_libs", version = "2.0.4" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -117,6 +122,12 @@ googleid = { module = "com.google.android.libraries.identity.googleid:googleid",
 supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt", version.ref = "supabase" }
 
 androidx-browser = { module = "androidx.browser:browser", version.ref = "androidx-browser" }
+
+
+# Google Pay
+google-pay-wallet = { module = "com.google.android.gms:play-services-wallet", version.ref = "google-pay-wallet" }
+google-pay-compose-button = { module = "com.google.pay.button:compose-pay-button", version.ref = "google-pay-compose-button" }
+kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinx-coroutines" }
 
 
 

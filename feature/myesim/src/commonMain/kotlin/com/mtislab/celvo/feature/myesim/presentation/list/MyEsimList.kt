@@ -1,9 +1,11 @@
 package com.mtislab.celvo.feature.myesim.presentation.list
 
+import CelvoPlaceholder
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -29,73 +31,74 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import celvo.feature.myesim.generated.resources.Res
 import celvo.feature.myesim.generated.resources.ic_add
 import celvo.feature.myesim.generated.resources.ic_arrow_right
-import celvo.feature.myesim.generated.resources.ic_auto_renewal
 import celvo.feature.myesim.generated.resources.ic_network_broadcast
-import celvo.feature.myesim.generated.resources.ic_validity_period
+import celvo.feature.myesim.generated.resources.mascot_no_e_sim_added
 import coil3.compose.AsyncImage
+import com.celvo.core.designsystem.resources.ic_sim_card
 import com.mtislab.celvo.feature.myesim.domain.model.EsimStatus
 import com.mtislab.celvo.feature.myesim.domain.model.UserEsim
 import com.mtislab.core.designsystem.components.buttons.CelvoButton
+import com.mtislab.core.designsystem.components.buttons.CelvoCircleButton
 import com.mtislab.core.designsystem.components.cards.CelvoCard
 import com.mtislab.core.designsystem.theme.CelvoDark900
 import com.mtislab.core.designsystem.theme.CelvoGreen300
 import com.mtislab.core.designsystem.theme.CelvoGreen500
 import com.mtislab.core.designsystem.theme.CelvoGreen500Alpha15
-import com.mtislab.core.designsystem.theme.CelvoGreen700
 import com.mtislab.core.designsystem.theme.CelvoPurple300
 import com.mtislab.core.designsystem.theme.CelvoPurple500Alpha15
-import com.mtislab.core.designsystem.theme.CelvoRose500
 import com.mtislab.core.designsystem.theme.CelvoRose500Alpha15
-import com.mtislab.core.designsystem.theme.CelvoRose700
 import com.mtislab.core.designsystem.theme.PlusJakartaSans
 import com.mtislab.core.designsystem.theme.extended
+import com.mtislab.core.presentation.util.ObserveAsEvents
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
-
-
-
-/**
- * Simplified callback: UI only needs to launch the PendingIntent and notify when done.
- * No result interpretation needed — Samsung always returns RESULT_CANCELED,
- * and the real result arrives via broadcast to AndroidEsimInstaller.
- */
-typealias OnResolutionRequired = (
-    resolutionData: Any,
-    onLaunched: () -> Unit
-) -> Unit
+import com.celvo.core.designsystem.resources.Res as CoreRes
 
 @Composable
 fun MyEsimListRoot(
     onEsimClick: (UserEsim) -> Unit,
     onAddEsimClick: () -> Unit,
-    onResolutionRequired: OnResolutionRequired? = null,
+    onTopUpClick: (UserEsim) -> Unit,
     viewModel: MyEsimListViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val uriHandler = LocalUriHandler.current
 
-    // Launch resolution when needed
-    LaunchedEffect(state.resolutionRequired) {
-        state.resolutionRequired?.let { resolutionData ->
-            onResolutionRequired?.invoke(
-                resolutionData,
-                { viewModel.onAction(MyEsimListAction.ResolutionLaunched) }
-            )
+    ObserveAsEvents(viewModel.uiEvent) { event ->
+        when (event) {
+            is MyEsimListUiEvent.OpenUrl -> {
+                try {
+                    uriHandler.openUri(event.url)
+                } catch (_: Exception) {
+                }
+            }
         }
+    }
+
+    // ✅ This is now the SINGLE source of truth for triggering a load.
+    // It fires on first composition (initial load) AND every time the user
+    // returns to this screen (e.g. after visiting the platform eSIM setup screen).
+    // The isLoading guard in the ViewModel prevents concurrent duplicate calls.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.onAction(MyEsimListAction.Refresh)
     }
 
     MyEsimListScreen(
@@ -104,8 +107,8 @@ fun MyEsimListRoot(
             when (action) {
                 is MyEsimListAction.EsimClick -> onEsimClick(action.esim)
                 is MyEsimListAction.DetailsClick -> onEsimClick(action.esim)
-                is MyEsimListAction.ActivateClick -> viewModel.onAction(action)
-                MyEsimListAction.AddEsimClick -> onAddEsimClick()
+                is MyEsimListAction.TopUpClick -> onTopUpClick(action.esim)
+                is MyEsimListAction.AddEsimClick -> onAddEsimClick()
                 else -> viewModel.onAction(action)
             }
         }
@@ -118,7 +121,6 @@ fun MyEsimListScreen(
     onAction: (MyEsimListAction) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme.extended
-    val isDarkTheme = MaterialTheme.colorScheme.background == CelvoDark900
 
     Column(
         modifier = Modifier
@@ -135,7 +137,7 @@ fun MyEsimListScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         when {
-            state.isLoading -> {
+            state.isLoading && state.esims.isEmpty() -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -168,28 +170,30 @@ fun MyEsimListScreen(
             }
 
             state.showEmptyState -> {
-                EmptyEsimState(
-                    onAddClick = { onAction(MyEsimListAction.AddEsimClick) },
+                CelvoPlaceholder(
+                    icon = Res.drawable.mascot_no_e_sim_added,
+                    title = "აქ გამოჩნდება შეძენილი Esim",
+                    message = "დამატეთ და მართეთ რამდენიმე eSIM სხვადასხვა მოწყობილობაზე მარტივად.",
+                    actionLabel = "ახალი Esim",
+                    onActionClick = { onAction(MyEsimListAction.AddEsimClick) }
                 )
             }
 
-            state.showContent -> {
+            else -> {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     contentPadding = PaddingValues(bottom = 100.dp)
                 ) {
                     items(
-                        items = state.filteredEsims,
+                        items = state.esims,
                         key = { it.id }
                     ) { esim ->
                         EsimCard(
                             esim = esim,
-                            // ✅ დამატებული: isInstalling პარამეტრი loading state-ისთვის
-                            isInstalling = state.isEsimInstalling(esim.id),
+                            isInstalling = state.isInstalling && state.installingEsimId == esim.id,
                             onTopUpClick = { onAction(MyEsimListAction.TopUpClick(esim)) },
                             onDetailsClick = { onAction(MyEsimListAction.DetailsClick(esim)) },
                             onActivateClick = { onAction(MyEsimListAction.ActivateClick(esim)) },
-                            isDarkTheme = isDarkTheme
                         )
                     }
                 }
@@ -266,17 +270,15 @@ private fun EsimCard(
     onTopUpClick: () -> Unit,
     onDetailsClick: () -> Unit,
     onActivateClick: () -> Unit,
-    isDarkTheme: Boolean
 ) {
     val colors = MaterialTheme.colorScheme.extended
 
     CelvoCard(
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(16.dp),
-        // დეტალებზე გადასვლა ყოველთვის მუშაობს მთელ ქარდზე
         onClick = onDetailsClick
     ) {
-        // --- HEADER (იგივე) ---
+        // --- HEADER ---
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -284,55 +286,51 @@ private fun EsimCard(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.weight(1f)
             ) {
-                CountryFlag(
-                    flagUrl = esim.country.flagUrl,
-                    countryCode = esim.country.code,
-                    size = 40
-                )
-                Text(
-                    text = esim.userLabel ?: esim.country.name, // აქ შეიძლება country.name ცარიელი იყოს
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.textPrimary
-                )
+
+                CelvoCircleButton(icon = painterResource(CoreRes.drawable.ic_sim_card), onClick = {})
+
+                Column {
+                    Text(
+                        text = "Esim #${esim.iccid.takeLast(4)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+              /*      Text(
+                        text = "${esim.status}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.success,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )*/
+                }
+
+
             }
-            // StatusBadge იყენებს esim.status-ს, რომელიც პირდაპირ profileStatus-დან მოდის
-            StatusBadge(status = esim.status)
+            Spacer(modifier = Modifier.width(8.dp))
+            StatusBadge(status = esim.status, label = esim.statusDisplayName)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // --- INFO ROWS (მხოლოდ თუ მონაცემი გვაქვს) ---
+
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // თუ null-ია, ეს ხაზი არ გამოჩნდება
-            esim.dataUsage?.let { usage ->
-                EsimInfoRow(
-                    icon = Res.drawable.ic_network_broadcast,
-                    label = "პაკეტი:",
-                    value = "${usage.usedFormatted} / ${usage.totalFormatted}",
-                    valueColor = colors.textPrimary,
-                    iconTint = colors.textSecondary
-                )
-            }
+            EsimInfoRow(
+                icon = Res.drawable.ic_network_broadcast,
+                label = "შეძენილი პაკეტები:",
+                value = esim.totalBundles.toString(),
+                valueColor = colors.textPrimary,
+                iconTint = colors.textSecondary
+            )
 
-            // თუ null-ია, ეს ხაზი არ გამოჩნდება
-            esim.validity?.let { validity ->
-                EsimInfoRow(
-                    icon = Res.drawable.ic_validity_period,
-                    label = "დარჩენილი დრო:",
-                    value = "${validity.remainingDays} დღე",
-                    valueColor = colors.textPrimary,
-                    iconTint = colors.textSecondary
-                )
-            }
-
-            // Auto renewal ინფო ახალ API-ში არ ჩანს, ამიტომ აქ ან null შემოწმება უნდა,
-            // ან დროებით ამოღება/დამალვა.
-            // რადგან მოდელში არ შეგვიცვლია autoRenewalEnabled (Boolean),
-            // ის false იქნება დეფოლტად Repository-ში, ამიტომ "გამორთული" ეწერება.
+            EsimCountryFlags(countries = esim.supportedCountries)
         }
 
         HorizontalDivider(
@@ -342,10 +340,9 @@ private fun EsimCard(
         )
 
         // --- BUTTON LOGIC ---
-        // 2. მხოლოდ მაშინ ვაჩენთ ღილაკს თუ დაბრუნდა "primaryAction": "INSTALL"
         if (esim.primaryAction == "INSTALL") {
             CelvoButton(
-                text = if (isInstalling) "მიმდინარეობს..." else "ინსტალაცია", // ან "გააქტიურება"
+                text = "ინსტალაცია",
                 onClick = onActivateClick,
                 enabled = !isInstalling,
                 containerColor = CelvoGreen500,
@@ -353,17 +350,19 @@ private fun EsimCard(
                 modifier = Modifier.fillMaxWidth()
             )
         } else {
-            // სხვა შემთხვევაში - ან არაფერი, ან დეტალების ღილაკი.
-            // შენი მოთხოვნა: "მხოლოდ მაშინ ვაჩენთ ღილაკს..."
-            // თუ აქ "Details" ღილაკიც არ გინდა, მაშინ ეს ბლოკი ცარიელი უნდა იყოს.
-            // მაგრამ არსებულ კოდში გქონდა TopUp/Details.
-            // თუ გინდა ძველი ლოგიკა დატოვო როგორც fallback:
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // დეტალების ღილაკი ყოველთვის კარგია რომ იყოს
+                // Top-Up ღილაკი მხოლოდ მაშინ თუ გვინდა გამოჩნდეს.
+                // თუ დიზაინში ორივე გინდა, შეგიძლია TopUpActionButton-იც დაამატო, როგორც ადრე გქონდა.
+                // აქ ორივე მოთავსებულია Row-ში:
+                TopUpActionButton(
+                    text = "პაკეტები",
+                    onClick = onTopUpClick,
+                    modifier = Modifier.weight(1f)
+                )
+
                 DetailsActionButton(
                     text = "დეტალები",
                     onClick = onDetailsClick,
@@ -375,51 +374,28 @@ private fun EsimCard(
 }
 
 
-@Composable
-private fun CountryFlag(
-    flagUrl: String,
-    countryCode: String,
-    size: Int = 40
-) {
-    AsyncImage(
-        model = flagUrl.ifEmpty { "https://flagcdn.com/h120/${countryCode.lowercase()}.png" },
-        contentDescription = null,
-        modifier = Modifier
-            .size(size.dp)
-            .clip(CircleShape)
-            .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape),
-        contentScale = ContentScale.Crop
-    )
-}
+
 
 
 @Composable
 private fun StatusBadge(
     status: EsimStatus,
+    label: String
 ) {
     val color = MaterialTheme.colorScheme.extended
 
-    val (text, textColor, backgroundColor) = when {
-        status == EsimStatus.EXPIRED -> Triple(
-            "ვადაგასული",
-            color.destructive,
-            CelvoRose500Alpha15
-        )
-
-        status == EsimStatus.ACTIVE -> Triple(
-            "აქტიური",
+    val (textColor, backgroundColor) = when (status) {
+        EsimStatus.ACTIVE, EsimStatus.ENABLED, EsimStatus.INSTALLED -> Pair(
             color.success,
             CelvoGreen500Alpha15
         )
 
-        status == EsimStatus.PROVISIONED -> Triple(
-            "არააქტიური",
+        EsimStatus.RELEASED, EsimStatus.DOWNLOADED  -> Pair(
             color.textLink,
             CelvoPurple500Alpha15
         )
 
-        else -> Triple(
-            "ვადაგასული",
+        else -> Pair(
             color.destructive,
             CelvoRose500Alpha15
         )
@@ -432,7 +408,7 @@ private fun StatusBadge(
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
         Text(
-            text = text,
+            text = label,
             style = MaterialTheme.typography.labelSmall.copy(
                 fontFamily = PlusJakartaSans,
                 fontWeight = FontWeight.Medium,
@@ -511,6 +487,7 @@ private fun TopUpActionButton(
                 modifier = Modifier.padding(start = 14.dp),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp // ოდნავ პატარა ფონტი ორ ღილაკზე დასატევად
                 ),
                 color = contentColor
             )
@@ -535,7 +512,6 @@ private fun TopUpActionButton(
         }
     }
 }
-
 
 @Composable
 private fun DetailsActionButton(
@@ -564,12 +540,12 @@ private fun DetailsActionButton(
                 modifier = Modifier.padding(start = 14.dp),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp // ოდნავ პატარა ფონტი ორ ღილაკზე დასატევად
                 ),
                 color = contentColor
             )
 
             Spacer(modifier = Modifier.width(8.dp))
-
 
             Box(
                 modifier = Modifier
@@ -590,45 +566,82 @@ private fun DetailsActionButton(
     }
 }
 
+
+
+private const val MAX_VISIBLE_FLAGS = 4
+
 @Composable
-private fun EmptyEsimState(
-    onAddClick: () -> Unit,
+private fun EsimCountryFlags(
+    countries: List<com.mtislab.celvo.feature.myesim.domain.model.EsimCountry>,
+    modifier: Modifier = Modifier
 ) {
+    if (countries.isEmpty()) return
+
     val colors = MaterialTheme.colorScheme.extended
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+    val hasOverflow = countries.size > MAX_VISIBLE_FLAGS
+    val visibleFlags = if (hasOverflow) countries.take(MAX_VISIBLE_FLAGS - 1) else countries
+    val overflowCount = countries.size - visibleFlags.size
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = "ჯერ არ გაქვს eSIM",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontFamily = PlusJakartaSans,
-                    fontWeight = FontWeight.SemiBold
-                ),
-                color = colors.textPrimary
-            )
+        visibleFlags.forEach { country ->
+            FlagCircle {
+                AsyncImage(
+                    model = country.flagUrl.ifEmpty {
+                        "https://flagcdn.com/h120/${country.isoCode.lowercase()}.png"
+                    },
+                    contentDescription = country.isoCode,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        //.clip(CircleShape)
+                    ,
+                    contentScale = ContentScale.Crop
 
-            Text(
-                text = "დაამატე პირველი eSIM და დაიწყე მოგზაურობა",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontFamily = PlusJakartaSans
-                ),
-                color = colors.textSecondary
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            CelvoButton(
-                text = "დამატება",
-                onClick = onAddClick,
-                containerColor = MaterialTheme.colorScheme.primary,
-                icon = painterResource(Res.drawable.ic_add)
-            )
+                )
+            }
         }
+
+        if (hasOverflow) {
+            FlagCircle {
+                Text(
+                    text = "+$overflowCount",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontFamily = PlusJakartaSans,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 12.sp
+                    ),
+                    color = colors.textPrimary
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The circular card container — architecturally identical to CelvoCircleButton's
+ * internal CelvoCard(shape = CircleShape), but accepts arbitrary content (AsyncImage, Text)
+ * instead of being locked to a Painter icon.
+ */
+@Composable
+private fun FlagCircle(
+    size: Dp = 36.dp,
+    content: @Composable BoxScope.() -> Unit
+) {
+    CelvoCard(
+        onClick = {},
+        enabled = false,
+        modifier = Modifier.size(size),
+        shape = CircleShape,
+        contentPadding = PaddingValues(0.dp)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+            content = content
+        )
     }
 }

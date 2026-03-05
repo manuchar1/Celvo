@@ -1,5 +1,7 @@
 package com.mtislab.celvo.feature.store.presentation.components
 
+import TopupOption
+import TopupOptions
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -41,8 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import celvo.feature.store.generated.resources.Res
 import celvo.feature.store.generated.resources.ic_auto
-import com.mtislab.celvo.feature.store.presentation.checkout.TopupOption
-import com.mtislab.celvo.feature.store.presentation.checkout.TopupOptions
+
 import com.mtislab.core.designsystem.components.cards.CelvoCard
 import com.mtislab.core.designsystem.theme.extended
 import org.jetbrains.compose.resources.painterResource

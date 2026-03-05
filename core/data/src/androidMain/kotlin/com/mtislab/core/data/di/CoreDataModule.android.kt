@@ -1,9 +1,11 @@
 package com.mtislab.core.data.di
 
 import com.mtislab.core.data.esim.AndroidEsimInstaller
+import com.mtislab.core.data.payment.GooglePayManagerAndroid
 import com.mtislab.core.data.session.DATA_STORE_FILE_NAME
 import com.mtislab.core.data.session.createDataStore
 import com.mtislab.core.domain.esim.EsimInstaller
+import com.mtislab.core.domain.payment.NativePayManager
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import org.koin.dsl.module
@@ -21,4 +23,7 @@ actual val platformCoreDataModule = module {
         }
     }
     single<EsimInstaller> { AndroidEsimInstaller(context = get(), logger = get()) }
+
+    single { GooglePayManagerAndroid(get()) } bind NativePayManager::class
+
 }

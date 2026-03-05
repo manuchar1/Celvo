@@ -1,5 +1,7 @@
 package com.mtislab.celvo.feature.store.presentation.checkout
 
+import CheckoutState
+import PaymentMethod
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -11,12 +13,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeGestures
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
@@ -46,39 +50,39 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import celvo.feature.store.generated.resources.Res
+import celvo.feature.store.generated.resources.card
 import celvo.feature.store.generated.resources.ic_card
+import celvo.feature.store.generated.resources.ic_credit_card
 import celvo.feature.store.generated.resources.ic_info_circle
-import celvo.feature.store.generated.resources.ic_network
-import celvo.feature.store.generated.resources.ic_payment_method_apple
-import celvo.feature.store.generated.resources.ic_payment_method_mastercard
 import celvo.feature.store.generated.resources.ic_phone
 import celvo.feature.store.generated.resources.ic_promo_code
-import celvo.feature.store.generated.resources.ic_speed
-import coil3.compose.AsyncImage
+import com.celvo.core.designsystem.resources.ic_apple_logo
+import com.celvo.core.designsystem.resources.ic_google_logo
 import com.celvo.core.designsystem.resources.ic_left_arrow
-import com.mtislab.celvo.feature.store.domain.model.EsimPackage
-import com.mtislab.celvo.feature.store.presentation.components.AutoTopupCard
+import com.mtislab.celvo.feature.store.data.mapper.toPackageInfoCardData
 import com.mtislab.core.data.platform
 import com.mtislab.core.designsystem.components.auth.rememberGoogleAuthProvider
 import com.mtislab.core.designsystem.components.bottomsheets.LoginBottomSheet
 import com.mtislab.core.designsystem.components.buttons.CelvoActionIconButton
 import com.mtislab.core.designsystem.components.buttons.CelvoButton
 import com.mtislab.core.designsystem.components.cards.CelvoCard
+import com.mtislab.core.designsystem.components.cards.PackageInfoRow
+import com.mtislab.core.designsystem.components.cards.ProductInfoCard
+import com.mtislab.core.designsystem.components.payment.NativePayButton
+import com.mtislab.core.designsystem.components.payment.rememberNativePayLauncher
 import com.mtislab.core.designsystem.theme.CelvoPurple500
 import com.mtislab.core.designsystem.theme.PlusJakartaSans
 import com.mtislab.core.designsystem.theme.extended
-import com.mtislab.core.designsystem.utils.getRegionIcon
 import com.mtislab.core.designsystem.utils.rememberBrowserOpener
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 import org.koin.compose.viewmodel.koinViewModel
 import com.celvo.core.designsystem.resources.Res as CoreRes
@@ -89,6 +93,7 @@ fun CheckoutScreenRoot(
     type: String,
     region: String,
     onClose: () -> Unit,
+    onNavigateToPaymentResult: (isSuccess: Boolean, orderId: String?) -> Unit,
     viewModel: CheckoutViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -97,22 +102,41 @@ fun CheckoutScreenRoot(
     val googleAuthProvider = rememberGoogleAuthProvider()
     val openBrowser = rememberBrowserOpener()
 
-
     val isAndroid = remember { platform().contains("Android", ignoreCase = true) }
 
+    // NEW: Native wallet payment launcher (Google Pay on Android, stub on iOS)
+    val nativePayLauncher = rememberNativePayLauncher(
+        onTokenReceived = { token ->
+            viewModel.onAction(CheckoutAction.WalletTokenReceived(token))
+        },
+        onCancelled = {
+            viewModel.onAction(CheckoutAction.WalletPaymentCancelled)
+        },
+        onError = { error ->
+            viewModel.onAction(CheckoutAction.WalletPaymentFailed(error))
+        }
+    )
 
-    // ✅ 3. Event Listener (URL-ის გასახსნელად)
+    // One-shot event collector
     LaunchedEffect(viewModel.events) {
         viewModel.events.collect { event ->
             when (event) {
                 is CheckoutEvent.OpenWebUrl -> {
-                    // 🚀 ვხსნით ლინკს (Chrome Tabs / Safari VC)
                     openBrowser(event.url)
-                    // არ ვხურავთ ეკრანს, ველოდებით DeepLink-ს
                 }
-
                 is CheckoutEvent.ShowError -> {
                     snackbarHostState.showSnackbar(event.message)
+                }
+                is CheckoutEvent.NavigateToPaymentResult -> {
+                    onNavigateToPaymentResult(event.isSuccess, event.orderId)
+                }
+                // NEW: Launch native wallet payment sheet
+                is CheckoutEvent.LaunchNativeWalletPayment -> {
+                    nativePayLauncher.launch(
+                        amountCents = event.amountCents,
+                        currencyCode = event.currencyCode,
+                        merchantName = "Celvo"
+                    )
                 }
             }
         }
@@ -137,13 +161,16 @@ fun CheckoutScreenRoot(
                         val provider = if (isAndroid) googleAuthProvider else null
                         viewModel.onAction(CheckoutAction.LoginWithGoogle(provider))
                     }
-
                     else -> viewModel.onAction(action)
                 }
             }
         )
     }
 }
+
+// =============================================================================
+// Content (stateless composable driven entirely by CheckoutState)
+// =============================================================================
 
 @Composable
 private fun CheckoutContent(
@@ -159,41 +186,35 @@ private fun CheckoutContent(
     val pkg = state.packageDetails ?: return
     val scrollState = rememberScrollState()
 
+    // Login Bottom Sheet
     if (state.showLoginSheet) {
         LoginBottomSheet(
             onDismiss = { onAction(CheckoutAction.DismissLoginSheet) },
-            onGoogleClick = { onAction(CheckoutAction.LoginWithGoogle()) }, // Provider handled above
+            onGoogleClick = { onAction(CheckoutAction.LoginWithGoogle()) },
             onAppleClick = { onAction(CheckoutAction.LoginWithApple) },
             isIos = !isAndroid
+        )
+    }
+
+
+
+    // Promo Code Bottom Sheet
+    if (state.promo.showSheet) {
+        PromoCodeBottomSheet(
+            code = state.promo.code,
+            isValidating = state.promo.isValidating,
+            errorMessage = state.promo.errorMessage,
+            onCodeChanged = { onAction(CheckoutAction.PromoCodeChanged(it)) },
+            onApplyClick = { onAction(CheckoutAction.ApplyPromoCode) },
+            onDismiss = { onAction(CheckoutAction.DismissPromoSheet) }
         )
     }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Color.Transparent,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        bottomBar = {
-            // Sticky Footer
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.safeGestures)
-                    .background(MaterialTheme.colorScheme.background) // ფონი რომ კონტენტი არ ჩანდეს
-            ) {
-                // ფასის გამოთვლა (პაკეტი + ტოპ-აპი თუ არჩეულია)
-                val totalAmount = pkg.price // აქ შეგიძლიათ დაამატოთ logic თუ სხვა რამეს ამატებთ
-
-                CelvoButton(
-                    text = "გადახდა • ${formatPrice(totalAmount)} ${pkg.currency}",
-                    onClick = { onAction(CheckoutAction.PayClicked) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .padding(bottom = 16.dp), // Safe Area-სთვის
-                    isLoading = state.isLoading
-                )
-            }
-        }
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+        // NOTE: No bottomBar. The payment button lives inside the scrollable Column.
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -204,22 +225,43 @@ private fun CheckoutContent(
         ) {
             Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
 
+            // --- Header ---
             CheckoutHeader(onClose = onClose)
-            ProductInfoCard(pkg, countryName, type, region)
+
+            // --- Product Info (untouched) ---
+            ProductInfoCard(
+                data = pkg.toPackageInfoCardData(
+                    countryName = countryName,
+                    type = type,
+                    region = region
+                ),
+                trailingRow = {
+                    PackageInfoRow(
+                        icon = Res.drawable.ic_phone,
+                        label = "შენი მოწყობილობა",
+                        value = "eSIM თავსებადი",
+                    )
+                },
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // --- Auto Top-Up (commented out for future use) ---
+            /*
             AutoTopupCard(
                 isEnabled = state.isAutoTopupEnabled,
                 selectedOption = state.selectedTopupOption,
                 onToggle = { enabled -> onAction(CheckoutAction.ToggleAutoTopup(enabled)) },
                 onSelectOption = { option -> onAction(CheckoutAction.SelectTopupOption(option)) }
             )
-
             Spacer(modifier = Modifier.height(16.dp))
+            */
+
+            // --- Validity Info ---
             ValidityStartInfoBox()
             Spacer(modifier = Modifier.height(24.dp))
 
+            // --- Payment Method Selection ---
             Text(
                 text = "გადახდის მეთოდი",
                 style = MaterialTheme.typography.titleSmall,
@@ -227,62 +269,152 @@ private fun CheckoutContent(
                 modifier = Modifier.padding(bottom = 12.dp, start = 4.dp)
             )
 
-            // ჯერჯერობით მხოლოდ ბარათი (ან Apple Pay მომავალში)
             PaymentMethodsSection(
-                selectedMethod = "NEW_CARD",
-                onSelect = { /* Logic for selection */ }
+                selectedMethod = state.selectedPaymentMethod,
+                isWalletAvailable = state.isWalletAvailable,
+                isAndroid = isAndroid,
+                onSelect = { method -> onAction(CheckoutAction.SelectPaymentMethod(method)) }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
+
             PromoCodeCard(
-                promoCode = "",
-                onClick = { /* Open Dialog */ }
+                promoCode = state.promo.appliedCodeDisplay,
+                onClick = { onAction(CheckoutAction.OpenPromoSheet) }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // --- Order Summary ---
+            // --- Order Summary ---
             OrderSummary(
                 price = pkg.price,
-                discount = 0.0, // Backend logic needed
-                promoDiscount = 0.0,
+                discount = 0.0, // Backend package-level discount (future)
+                promoDiscount = state.promoDiscount,
                 currencySymbol = pkg.currency
             )
 
-            // ადგილი Footer-ისთვის რომ არ გადაეფაროს
-            Spacer(modifier = Modifier.height(100.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- Dynamic Payment Button (non-sticky, end of scroll) ---
+            PaymentButton(
+                selectedMethod = state.selectedPaymentMethod,
+                isWalletAvailable = state.isWalletAvailable,
+                isAndroid = isAndroid,
+                totalAmount = state.effectivePrice,
+                currency = pkg.currency,
+                isLoading = state.isLoading,
+                onPayClick = { onAction(CheckoutAction.PayClicked) }
+            )
+
+            // Bottom safe-area spacer so the button never collides with system nav
+            Spacer(
+                modifier = Modifier
+                    .windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)
+                    )
+                    .height(16.dp)
+            )
         }
     }
 }
 
-// ==========================================
-// Sub-Components
-// ==========================================
+// =============================================================================
+// Dynamic Payment Button
+// =============================================================================
 
+/**
+ * Renders a SINGLE primary button whose label changes based on the selected payment method.
+ *
+ * - [PaymentMethod.NATIVE_WALLET] + available -> "Pay with Google Pay" / "Pay with Apple Pay"
+ * - [PaymentMethod.CARD] (or wallet unavailable) -> "გაგრძელება" (Continue)
+ */
+/**
+ * Renders either the branded native wallet button (Google Pay / Apple Pay)
+ * or a CelvoButton for card payments.
+ *
+ * Google and Apple REQUIRE their official branded buttons.
+ * CelvoButton is only used for the CARD payment method.
+ */
 @Composable
-fun PaymentMethodsSection(selectedMethod: String, onSelect: (String) -> Unit) {
-    CelvoCard(contentPadding = PaddingValues(0.dp)) {
-        // Apple Pay (მხოლოდ iOS-ზე ან თუ მხარდაჭერილია)
-        /*
-        PaymentMethodItem(
-            icon = Res.drawable.ic_payment_method_apple,
-            title = "Apple Pay",
-            isSelected = selectedMethod == "APPLE_PAY",
-            onClick = { onSelect("APPLE_PAY") },
-            isApplePay = true
-        )
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-        */
+private fun PaymentButton(
+    selectedMethod: PaymentMethod,
+    isWalletAvailable: Boolean,
+    isAndroid: Boolean,
+    totalAmount: Double,
+    currency: String,
+    isLoading: Boolean,
+    onPayClick: () -> Unit
+) {
+    val useWallet = selectedMethod == PaymentMethod.NATIVE_WALLET && isWalletAvailable
 
-        PaymentMethodItem(
-            icon = Res.drawable.ic_card,
-            title = "საბანკო ბარათი",
-            subtitle = "Visa, Mastercard, Amex",
-            isSelected = true, // ჯერჯერობით მხოლოდ ეს გვაქვს
-            onClick = { onSelect("NEW_CARD") }
+    if (useWallet) {
+        // Official branded Google Pay / Apple Pay button
+        NativePayButton(
+            onClick = onPayClick,
+            enabled = !isLoading,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+        )
+    } else {
+        // Standard Celvo button for card payments
+        CelvoButton(
+            text = "Continue", // "Continue" — redirects to BOG payment page
+            onClick = onPayClick,
+            modifier = Modifier.fillMaxWidth(),
+            isLoading = isLoading
         )
     }
 }
+
+
+
+
+
+// =============================================================================
+// Payment Methods Section
+// =============================================================================
+
+@Composable
+fun PaymentMethodsSection(
+    selectedMethod: PaymentMethod,
+    isWalletAvailable: Boolean,
+    isAndroid: Boolean,
+    onSelect: (PaymentMethod) -> Unit
+) {
+    CelvoCard(contentPadding = PaddingValues(0.dp)) {
+
+        // --- Native Wallet (Google Pay / Apple Pay) ---
+        if (isWalletAvailable) {
+            PaymentMethodItem(
+                icon = if (isAndroid) CoreRes.drawable.ic_google_logo else CoreRes.drawable.ic_apple_logo,
+                title = if (isAndroid) "Google Pay" else "Apple Pay",
+                subtitle = null,
+                isSelected = selectedMethod == PaymentMethod.NATIVE_WALLET,
+                onClick = { onSelect(PaymentMethod.NATIVE_WALLET) },
+            )
+
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            )
+        }
+
+        // --- Card ---
+        PaymentMethodItem(
+            icon = Res.drawable.ic_credit_card,
+            title = stringResource(Res.string.card),
+            subtitle = "Visa, Mastercard, Amex",
+            isSelected = selectedMethod == PaymentMethod.CARD,
+            onClick = { onSelect(PaymentMethod.CARD) }
+        )
+    }
+}
+
+// =============================================================================
+// Sub-Components (unchanged signatures, cleaned up)
+// =============================================================================
 
 @Composable
 fun PaymentMethodItem(
@@ -291,7 +423,7 @@ fun PaymentMethodItem(
     subtitle: String? = null,
     isSelected: Boolean,
     onClick: () -> Unit,
-    isApplePay: Boolean = false
+
 ) {
     Row(
         modifier = Modifier
@@ -308,8 +440,8 @@ fun PaymentMethodItem(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                     shape = RoundedCornerShape(6.dp)
                 )
-                .clip(RoundedCornerShape(6.dp))
-                .background(if (isApplePay) Color.Black else Color.White),
+                .clip(RoundedCornerShape(6.dp)),
+               // .background(if (isApplePay) Color.Black else Color.White),
             contentAlignment = Alignment.Center
         ) {
             Image(
@@ -349,7 +481,9 @@ fun PromoCodeCard(promoCode: String?, onClick: () -> Unit) {
     CelvoCard(onClick = onClick, contentPadding = PaddingValues(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Box(
-                modifier = Modifier.size(40.dp).clip(CircleShape)
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
                     .background(CelvoPurple500.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
@@ -369,7 +503,11 @@ fun PromoCodeCard(promoCode: String?, onClick: () -> Unit) {
                 Text(
                     text = promoCode?.takeIf { it.isNotEmpty() } ?: "შეიყვანეთ კოდი",
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                    color = if (!promoCode.isNullOrEmpty()) MaterialTheme.colorScheme.extended.textPrimary else MaterialTheme.colorScheme.extended.textTertiary
+                    color = if (!promoCode.isNullOrEmpty()) {
+                        MaterialTheme.colorScheme.extended.textPrimary
+                    } else {
+                        MaterialTheme.colorScheme.extended.textTertiary
+                    }
                 )
             }
             Icon(
@@ -386,18 +524,22 @@ fun OrderSummary(price: Double, discount: Double, promoDiscount: Double, currenc
     val total = (price - discount - promoDiscount).coerceAtLeast(0.0)
     Column(modifier = Modifier.fillMaxWidth()) {
         SummaryRow("პაკეტის საფასური", "${formatPrice(price)}$currencySymbol", isTotal = false)
-        if (discount > 0) SummaryRow(
-            "ფასდაკლება",
-            "-${formatPrice(discount)}$currencySymbol",
-            valueColor = CelvoPurple500,
-            isTotal = false
-        )
-        if (promoDiscount > 0) SummaryRow(
-            "პრომოკოდი",
-            "-${formatPrice(promoDiscount)}$currencySymbol",
-            valueColor = MaterialTheme.colorScheme.extended.destructive,
-            isTotal = false
-        )
+        if (discount > 0) {
+            SummaryRow(
+                label = "ფასდაკლება",
+                value = "-${formatPrice(discount)}$currencySymbol",
+                valueColor = CelvoPurple500,
+                isTotal = false
+            )
+        }
+        if (promoDiscount > 0) {
+            SummaryRow(
+                label = "პრომოკოდი",
+                value = "-${formatPrice(promoDiscount)}$currencySymbol",
+                valueColor = MaterialTheme.colorScheme.extended.destructive,
+                isTotal = false
+            )
+        }
         Spacer(modifier = Modifier.height(8.dp))
         SummaryRow("ჯამური თანხა", "${formatPrice(total)}$currencySymbol", isTotal = true)
     }
@@ -406,34 +548,25 @@ fun OrderSummary(price: Double, discount: Double, promoDiscount: Double, currenc
 @Composable
 fun SummaryRow(label: String, value: String, valueColor: Color? = null, isTotal: Boolean) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
-            style = if (isTotal) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium,
-            color = if (isTotal) MaterialTheme.colorScheme.extended.textPrimary else MaterialTheme.colorScheme.extended.textSecondary
+            style = if (isTotal) MaterialTheme.typography.titleMedium
+            else MaterialTheme.typography.bodyMedium,
+            color = if (isTotal) MaterialTheme.colorScheme.extended.textPrimary
+            else MaterialTheme.colorScheme.extended.textSecondary
         )
         Text(
             text = value,
-            style = if (isTotal) MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp) else MaterialTheme.typography.bodyMedium,
+            style = if (isTotal) MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp)
+            else MaterialTheme.typography.bodyMedium,
             color = valueColor ?: MaterialTheme.colorScheme.extended.textPrimary
         )
-    }
-}
-
-
-private fun formatPrice(amount: Double): String {
-
-    val rounded = (amount * 100).toLong() / 100.0
-    val str = rounded.toString()
-
-    return if (str.contains(".")) {
-        val parts = str.split(".")
-        if (parts[1].length == 1) "${str}0" else str
-    } else {
-        "$str.00"
     }
 }
 
@@ -460,68 +593,12 @@ fun CheckoutHeader(onClose: () -> Unit) {
 }
 
 @Composable
-fun ProductInfoCard(
-    pkg: EsimPackage,
-    countryName: String,
-    type: String,
-    region: String
-) {
-    CelvoCard(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = pkg.dataAmountDisplay,
-                    style = TextStyle(
-                        fontFamily = PlusJakartaSans,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp,
-                        lineHeight = 28.sp
-                    ),
-                    color = MaterialTheme.colorScheme.extended.textPrimary
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = pkg.validityDisplay,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.extended.textSecondary
-                )
-            }
-            CountryBadge(
-                isoCode = pkg.isoCode,
-                countryName = countryName,
-                type = type,
-                region = region
-            )
-
-        }
-        Spacer(modifier = Modifier.height(24.dp))
-        CheckoutInfoRow(icon = Res.drawable.ic_speed, label = "სიჩქარე", value = "5G / LTE")
-        CheckoutDivider()
-        val firstOperator = pkg.operators.firstOrNull()?.name ?: "Network"
-        val extraCount = (pkg.operators.size - 1).coerceAtLeast(0)
-        CheckoutInfoRow(
-            icon = Res.drawable.ic_network,
-            label = "ქსელები",
-            value = if (extraCount > 0) "$firstOperator... +$extraCount" else firstOperator,
-            isClickable = true
-        )
-        CheckoutDivider()
-        CheckoutInfoRow(
-            icon = Res.drawable.ic_phone,
-            label = "შენი მოწყობილობა",
-            value = "eSIM თავსებადი"
-        )
-    }
-}
-
-@Composable
 fun ValidityStartInfoBox() {
     Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(CircleShape)
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .clip(CircleShape)
             .background(CelvoPurple500.copy(alpha = 0.15f))
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -540,97 +617,13 @@ fun ValidityStartInfoBox() {
     }
 }
 
-@Composable
-fun CheckoutDivider() {
-    HorizontalDivider(
-        modifier = Modifier.padding(vertical = 16.dp),
-        thickness = 0.5.dp,
-        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
-    )
-}
-
-@Composable
-fun CheckoutInfoRow(
-    icon: DrawableResource,
-    label: String,
-    value: String,
-    isClickable: Boolean = false,
-    onClick: () -> Unit = {}
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth()
-            .then(if (isClickable) Modifier.clickable(onClick = onClick) else Modifier),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Image(
-            painter = painterResource(icon),
-            contentDescription = null,
-            modifier = Modifier.size(40.dp),
-            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.extended.textSecondary)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.extended.textSecondary
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.extended.textPrimary
-            )
-        }
-        if (isClickable) Icon(
-            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-            contentDescription = "Details",
-            tint = MaterialTheme.colorScheme.extended.textSecondary,
-            modifier = Modifier.size(24.dp)
-        )
+private fun formatPrice(amount: Double): String {
+    val rounded = (amount * 100).toLong() / 100.0
+    val str = rounded.toString()
+    return if (str.contains(".")) {
+        val parts = str.split(".")
+        if (parts[1].length == 1) "${str}0" else str
+    } else {
+        "$str.00"
     }
 }
-
-@Composable
-fun CountryBadge(
-    isoCode: String,
-    countryName: String,
-    type: String,
-    region: String,
-) {
-    val flagUrl = remember(isoCode) { "https://flagcdn.com/h240/${isoCode.lowercase()}.png" }
-    val iconResource = remember(countryName) { getRegionIcon(region) }
-    Box(
-        modifier = Modifier.clip(RoundedCornerShape(50))
-            .background(MaterialTheme.colorScheme.extended.textPrimary.copy(alpha = 0.05f))
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (type == "REGION") {
-                Image(
-                    painter = painterResource(iconResource),
-                    contentDescription = countryName,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(20.dp).clip(CircleShape)
-                )
-            } else {
-                AsyncImage(
-                    model = flagUrl,
-                    contentDescription = countryName,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(20.dp).clip(CircleShape)
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = countryName,
-                style = TextStyle(
-                    fontFamily = PlusJakartaSans,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 14.sp
-                ),
-                color = MaterialTheme.colorScheme.extended.textPrimary
-            )
-        }
-    }
-}
-
