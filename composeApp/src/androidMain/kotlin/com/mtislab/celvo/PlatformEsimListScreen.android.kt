@@ -53,14 +53,15 @@ import com.mtislab.celvo.feature.myesim.presentation.list.MyEsimListRoot
 @Composable
 actual fun PlatformEsimListScreen(
     onEsimClick: (UserEsim) -> Unit,
-    onAddEsimClick: () -> Unit
+    onAddEsimClick: () -> Unit,
+    onTopUpClick: (UserEsim) -> Unit,
 ) {
     val context = LocalContext.current
 
     // ── READ_PHONE_STATE Permission ───────────────────────────────────────
     // Track whether permission has been granted. Checked once at composition
     // and updated when the permission launcher returns.
-    var permissionRequested by remember { mutableStateOf(false) }
+/*    var permissionRequested by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -70,11 +71,11 @@ actual fun PlatformEsimListScreen(
         } else {
             println("⚠️ READ_PHONE_STATE denied — using broadcast-only mode")
         }
-    }
+    }*/
 
     // Request permission eagerly on first composition if not already granted.
     // This ensures the permission is available before the user triggers install.
-    LaunchedEffect(Unit) {
+/*    LaunchedEffect(Unit) {
         if (!permissionRequested) {
             permissionRequested = true
             val hasPermission = ContextCompat.checkSelfPermission(
@@ -86,7 +87,7 @@ actual fun PlatformEsimListScreen(
                 permissionLauncher.launch(Manifest.permission.READ_PHONE_STATE)
             }
         }
-    }
+    }*/
 
     // ── Resolution Launcher ───────────────────────────────────────────────
     // Activity Result launcher for the eSIM consent dialog PendingIntent.
@@ -123,9 +124,9 @@ actual fun PlatformEsimListScreen(
         }
     }
 
-    MyEsimListRoot(
+   MyEsimListRoot(
         onEsimClick = onEsimClick,
         onAddEsimClick = onAddEsimClick,
-        onResolutionRequired = onResolutionRequired
+        onTopUpClick = onTopUpClick,
     )
 }

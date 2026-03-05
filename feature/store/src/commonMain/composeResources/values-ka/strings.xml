@@ -15,4 +15,13 @@
     <string name="section_regional_plans">რეგიონალური პაკეტები</string>
     <string name="action_retry">სცადეთ თავიდან</string>
     <string name="action_see_all">მეტის ნახვა</string>
+    <string name="select_esim">აირჩიე eSIM</string>
+    <string name="add_data">შევსება</string>
+    <string name="install">დაყენება</string>
+    <string name="my_plans">პაკეტები</string>
+    <string name="promo_code">პრომოკოდი</string>
+    <string name="have_promo_or_referral_code">გაქვს პრომო ან მოწვევის კოდი?</string>
+    <string name="enter_code">შეიყვანეთ კოდი</string>
+    <string name="card">საბანკო ბარათი</string>
+
 </resources>

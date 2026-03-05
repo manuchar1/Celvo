@@ -1,16 +1,7 @@
 package com.mtislab.celvo.feature.store.presentation.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -25,8 +16,9 @@ import com.mtislab.celvo.feature.store.domain.model.MarketingBanner
 @Composable
 fun MarketingBannerCarousel(
     banners: List<MarketingBanner>,
-    onBannerClick: (String) -> Unit,
-
+    claimedPromoCode: String?, // Passed down from your screen's StateFlow
+    onBannerClick: (String) -> Unit, // For deep links (standard banners)
+    onClaimCode: (String) -> Unit    // For interactive promo banners
 ) {
     if (banners.isEmpty()) return
 
@@ -39,20 +31,35 @@ fun MarketingBannerCarousel(
         // 1. Horizontal Pager
         HorizontalPager(
             state = pagerState,
-           // contentPadding = PaddingValues(horizontal = 20.dp), // Padding for peek effect
+            key = { page -> banners.getOrNull(page)?.id ?: page.toString() },
             pageSpacing = 12.dp,
             modifier = Modifier.fillMaxWidth()
         ) { page ->
-            MarketingBannerItem(
-                banner = banners[page],
-                onBannerClick = onBannerClick
-            )
+
+            val banner = banners[page]
+
+            // 🎯 ROUTING LOGIC
+            if (banner.promoCode != null) {
+                // If the backend attached a promo code, it's an interactive reward banner
+                val isClaimed = banner.promoCode == claimedPromoCode
+
+                MascotPromoBanner(
+                    banner = banner,
+                    isClaimed = isClaimed,
+                    onClaimClicked = { onClaimCode(banner.promoCode) }
+                )
+            } else {
+                // Otherwise, fallback to your standard MarketingBannerItem
+                MarketingBannerItem(
+                    banner = banner,
+                    onBannerClick = onBannerClick
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         // 2. Dots Indicator
-        // Only show if there is more than 1 banner
         if (banners.size > 1) {
             Row(
                 horizontalArrangement = Arrangement.Center,
@@ -61,11 +68,10 @@ fun MarketingBannerCarousel(
                 repeat(banners.size) { iteration ->
                     val isSelected = pagerState.currentPage == iteration
                     val color = if (isSelected) {
-                        MaterialTheme.colorScheme.primary // Active purple
+                        MaterialTheme.colorScheme.primary
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f) // Inactive gray
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
                     }
-
                     val size = if (isSelected) 8.dp else 6.dp
 
                     Box(

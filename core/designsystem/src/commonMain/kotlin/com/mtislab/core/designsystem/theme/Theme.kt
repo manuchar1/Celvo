@@ -49,7 +49,6 @@ val LightColorScheme = lightColorScheme(
 
 @Immutable
 data class ExtendedColors(
-
     val success: Color,
     val warning: Color,
     val destructive: Color,

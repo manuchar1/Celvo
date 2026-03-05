@@ -25,9 +25,11 @@ class MainScreenViewModel(
     init {
         viewModelScope.launch {
             sessionManager.state.collect { authState ->
-                val isLoggedIn = authState is AuthState.Authenticated
                 _state.update {
-                    it.copy(isLoggedIn = isLoggedIn)
+                    it.copy(
+                        isAuthLoading = false,                              // ✅ Auth state is now known
+                        isLoggedIn = authState is AuthState.Authenticated
+                    )
                 }
             }
         }
@@ -35,7 +37,7 @@ class MainScreenViewModel(
 
     fun onAction(action: MainScreenAction) {
         when (action) {
-            else -> { /* Handle other actions */ }
+            else -> {}
         }
     }
 }

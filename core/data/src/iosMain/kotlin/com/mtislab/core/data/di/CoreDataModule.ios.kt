@@ -1,9 +1,11 @@
 package com.mtislab.core.data.di
 
 import com.mtislab.core.data.esim.IosEsimInstaller
+import com.mtislab.core.data.payment.NativePayManagerIos
 import com.mtislab.core.data.session.DATA_STORE_FILE_NAME
 import com.mtislab.core.data.session.createDataStore
 import com.mtislab.core.domain.esim.EsimInstaller
+import com.mtislab.core.domain.payment.NativePayManager
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
 import org.koin.dsl.module
@@ -31,4 +33,6 @@ actual val platformCoreDataModule = module {
     }
 
     single<EsimInstaller> { IosEsimInstaller(logger = get()) }
+    single { NativePayManagerIos() } bind NativePayManager::class
+
 }

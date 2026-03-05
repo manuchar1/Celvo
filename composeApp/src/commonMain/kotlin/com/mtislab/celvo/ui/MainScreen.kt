@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -37,6 +38,7 @@ import com.mtislab.celvo.navigation.bottomNavRoutes
 import com.mtislab.celvo.ui.components.CelvoBottomBar
 import com.mtislab.core.designsystem.theme.extended
 import com.mtislab.core.domain.model.Route
+import com.mtislab.core.domain.model.Route.SearchTab
 import com.mtislab.core.domain.utils.DeepLinkHandler
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -45,7 +47,6 @@ fun MainScreenRoot(
     viewModel: MainScreenViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-
     MainScreenScreen(
         state = state,
         onAction = viewModel::onAction
@@ -61,36 +62,38 @@ fun MainScreenScreen(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    // 🚀 Deep Link Listener
     LaunchedEffect(Unit) {
         DeepLinkHandler.events.collect { url ->
-            println("🔗 DeepLink caught in UI: $url")
-
             if (url.contains("/payment/result") || url.contains("/payment/status")) {
                 val isSuccess = !url.contains("fail", ignoreCase = true) &&
                         !url.contains("error", ignoreCase = true)
-
                 val orderId = url.substringAfter("order_id=", "").substringBefore("&")
-
                 navController.navigate(
                     Route.PaymentResult(
                         isSuccess = isSuccess,
-                        orderId = if (orderId.isNotEmpty()) orderId else null
+                        orderId = orderId.ifEmpty { null }
                     )
                 ) {
                     popUpTo(Route.Home)
                 }
             }
         }
+
+
+    }
+
+
+    LaunchedEffect(state.isLoggedIn) {
+        if (!state.isAuthLoading && !state.isLoggedIn) {
+            navController.navigate(Route.Home) {
+                popUpTo(navController.graph.id) { inclusive = true }
+            }
+        }
     }
 
     val startColor = MaterialTheme.colorScheme.extended.gradientStart
-
     val backgroundBrush = Brush.verticalGradient(
-        colors = listOf(
-            startColor,
-            startColor.copy(alpha = 0f)
-        ),
+        colors = listOf(startColor, startColor.copy(alpha = 0f)),
         startY = 0f,
         endY = 1200f
     )
@@ -124,26 +127,19 @@ fun MainScreenScreen(
                     .padding(bottom = innerPadding.calculateBottomPadding())
             ) {
 
-                // Auth Graph
+                // ── Auth Graph ─────────────────────────────────────────────────────────
                 navigation<Route.AuthGraph>(startDestination = Route.Login()) {
                     composable<Route.Login> { backStackEntry ->
                         val args = backStackEntry.toRoute<Route.Login>()
-                        val redirectTo = args.redirectTo
                         RegisterRoot(
                             onLoginSuccess = {
-                                if (redirectTo != null) {
-                                    val targetRoute = when (redirectTo) {
-                                        "profile" -> Route.Profile
-                                        "my_esim" -> Route.MyEsim
-                                        else -> Route.Home
-                                    }
-                                    navController.navigate(targetRoute) {
-                                        popUpTo(Route.AuthGraph) { inclusive = true }
-                                    }
-                                } else {
-                                    navController.navigate(Route.Home) {
-                                        popUpTo(Route.Home) { inclusive = true }
-                                    }
+                                val target = when (args.redirectTo) {
+                                    "profile" -> Route.Profile
+                                    "my_esim" -> Route.MyEsim
+                                    else      -> Route.Home
+                                }
+                                navController.navigate(target) {
+                                    popUpTo(navController.graph.id) { inclusive = true }
                                 }
                             },
                             onSkipClick = {
@@ -158,6 +154,7 @@ fun MainScreenScreen(
                     }
                 }
 
+                // ── Store / Home ───────────────────────────────────────────────────────
                 composable<Route.Home> {
                     StoreScreenRoot(
                         onNavigateToDetails = { isoCode, countryName, type ->
@@ -165,21 +162,14 @@ fun MainScreenScreen(
                         },
                         onNavigateToLogin = {
                             navController.navigate(Route.Login(redirectTo = null))
-
                         },
-
                         onNavigateToSearch = { tab, focus ->
-                            navController.navigate(
-                                Route.Search(
-                                    initialTab = tab,
-                                    focusSearch = focus
-                                )
-                            )
+                            navController.navigate(Route.Search(initialTab = tab, focusSearch = focus))
                         }
                     )
                 }
 
-                // Packages
+                // ── Packages ───────────────────────────────────────────────────────────
                 composable<Route.Packages> { backStackEntry ->
                     val args = backStackEntry.toRoute<Route.Packages>()
                     PackagesScreenRoot(
@@ -194,25 +184,25 @@ fun MainScreenScreen(
                                     countryName = args.countryName,
                                     type = args.type,
                                     region = args.isoCode
-
                                 )
                             )
                         }
                     )
                 }
 
-                // Checkout
+                // ── Checkout ───────────────────────────────────────────────────────────
                 composable<Route.CheckoutRoute> { backStackEntry ->
                     val args = backStackEntry.toRoute<Route.CheckoutRoute>()
                     CheckoutScreenRoot(
                         countryName = args.countryName,
                         type = args.type,
                         region = args.region,
-                        onClose = { navController.popBackStack() }
+                        onClose = { navController.popBackStack() },
+                        onNavigateToPaymentResult = { isSuccess, orderId ->}
                     )
                 }
 
-                // Payment Result
+                // ── Payment Result ─────────────────────────────────────────────────────
                 composable<Route.PaymentResult> { backStackEntry ->
                     val args = backStackEntry.toRoute<Route.PaymentResult>()
                     PaymentResultScreen(
@@ -226,10 +216,9 @@ fun MainScreenScreen(
                     )
                 }
 
-                // Search Screen
+                // ── Search ─────────────────────────────────────────────────────────────
                 composable<Route.Search> { backStackEntry ->
                     val args = backStackEntry.toRoute<Route.Search>()
-
                     SearchRoot(
                         initialTab = args.initialTab,
                         focusSearch = args.focusSearch,
@@ -240,54 +229,58 @@ fun MainScreenScreen(
                     )
                 }
 
-
+                // ── My eSIM (auth-guarded) ─────────────────────────────────────────────
                 composable<Route.MyEsim> {
-                    if (state.isLoggedIn) {
+                    AuthGuardedContent(
+                        isAuthLoading = state.isAuthLoading,
+                        isLoggedIn = state.isLoggedIn,
+                        onRedirectToLogin = {
+                            navController.navigate(Route.Login(redirectTo = "my_esim")) {
+                                popUpTo(Route.Home) { saveState = true }
+                            }
+                        }
+                    ) {
                         PlatformEsimListScreen(
                             onEsimClick = { esim ->
                                 navController.navigate(Route.EsimDetailsRoute(esimId = esim.id))
                             },
                             onAddEsimClick = {
-                                navController.navigate(Route.Home)
-                            }
+                                navController.navigate(Route.Search(initialTab = SearchTab.COUNTRY, focusSearch = false))
+                            },
+                            onTopUpClick = {}
                         )
-                    } else {
-                        LaunchedEffect(Unit) {
-                            navController.navigate(Route.Login(redirectTo = "my_esim")) {
-                                popUpTo(Route.Home) { saveState = true }
-                            }
-                        }
                     }
                 }
 
-                // eSIM Details
+                // ── eSIM Details ───────────────────────────────────────────────────────
                 composable<Route.EsimDetailsRoute> {
                     EsimDetailsRoot(
                         onBackClick = { navController.popBackStack() },
-                        onTopUpClick = { esimId -> /* TODO: Navigate to top-up */ }
+                        onTopUpClick = { /* TODO */ }
                     )
                 }
 
-                // Profile
+                // ── Profile (auth-guarded) ─────────────────────────────────────────────
                 composable<Route.Profile> {
-                    if (state.isLoggedIn) {
+                    AuthGuardedContent(
+                        isAuthLoading = state.isAuthLoading,
+                        isLoggedIn = state.isLoggedIn,
+                        onRedirectToLogin = {
+                            navController.navigate(Route.Login(redirectTo = "profile"))
+                        }
+                    ) {
                         ProfileRoot(
                             onNavigateToTheme = { navController.navigate(Route.Theme) },
                             onNavigateToLanguage = { navController.navigate(Route.Language) }
                         )
-                    } else {
-                        LaunchedEffect(Unit) {
-                            navController.navigate(Route.Login(redirectTo = "profile"))
-                        }
                     }
                 }
 
-                // Theme Settings
+                // ── Settings ───────────────────────────────────────────────────────────
                 composable<Route.Theme> {
                     ThemeScreen(onBackClick = { navController.popBackStack() })
                 }
 
-                // Language Settings
                 composable<Route.Language> {
                     LanguageScreen(onBackClick = { navController.popBackStack() })
                 }
@@ -296,9 +289,55 @@ fun MainScreenScreen(
     }
 }
 
+/**
+ * Reusable auth guard for protected destinations.
+ *
+ * States:
+ *  - [isAuthLoading] = true  → SessionManager hasn't emitted yet; show a
+ *                              spinner and make NO routing decision. This is
+ *                              the key fix: without this guard, the default
+ *                              isLoggedIn=false would immediately redirect
+ *                              authenticated users to Login before the token
+ *                              was verified, preventing the content from ever
+ *                              being composed and the API from ever being called.
+ *  - [isLoggedIn]   = true  → Compose [content].
+ *  - else                   → Fire [onRedirectToLogin] once via LaunchedEffect.
+ */
+@Composable
+private fun AuthGuardedContent(
+    isAuthLoading: Boolean,
+    isLoggedIn: Boolean,
+    onRedirectToLogin: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    when {
+        isAuthLoading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
+        isLoggedIn -> content()
+
+        else -> {
+            LaunchedEffect(Unit) {
+                onRedirectToLogin()
+            }
+        }
+    }
+}
+
 @Composable
 private fun ScreenPlaceholder(text: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text, color = MaterialTheme.colorScheme.onBackground)
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = text, color = MaterialTheme.colorScheme.onBackground)
     }
 }
