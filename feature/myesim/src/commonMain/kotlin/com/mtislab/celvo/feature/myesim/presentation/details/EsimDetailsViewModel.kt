@@ -16,6 +16,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/**
+ * ViewModel for the eSim Details Screen.
+ * Handles displaying and managing a specific eSIM.
+ */
 class EsimDetailsViewModel(
     savedStateHandle: SavedStateHandle,
     private val repository: MyEsimRepository
@@ -23,9 +27,11 @@ class EsimDetailsViewModel(
 
     private val _state = MutableStateFlow(EsimDetailsState())
 
+    // One-shot events for navigation and messages
     private val _events = Channel<EsimDetailsEvent>()
     val events = _events.receiveAsFlow()
 
+    // Get eSIM ID from navigation arguments
     private val routeArgs = savedStateHandle.toRoute<Route.EsimDetailsRoute>()
 
     val state = _state
@@ -33,66 +39,70 @@ class EsimDetailsViewModel(
             if (_state.value.esim == null) {
                 loadEsimDetails()
             }
-            if (_state.value.bundleInfo == null) {
-                loadBundles(isRefresh = false)
-            }
         }
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000L),
-            initialValue = _state.value
+            started = SharingStarted.WhileSubscribed(5_000L),
+            initialValue = EsimDetailsState()
         )
 
     fun onAction(action: EsimDetailsAction) {
         when (action) {
-            is EsimDetailsAction.Refresh -> {
-                loadBundles(isRefresh = true)
-                loadEsimDetails()
-            }
+            EsimDetailsAction.Refresh -> loadEsimDetails()
             EsimDetailsAction.BackClick -> Unit // Handled in UI
-            EsimDetailsAction.ShowQrCode -> _state.update { it.copy(showQrCodeSheet = true) }
-            EsimDetailsAction.DismissQrCode -> _state.update { it.copy(showQrCodeSheet = false) }
-            EsimDetailsAction.ShowOperators -> _state.update { it.copy(showOperatorsSheet = true) }
-            EsimDetailsAction.DismissOperators -> _state.update { it.copy(showOperatorsSheet = false) }
-            EsimDetailsAction.StartEditLabel -> _state.update {
-                it.copy(isEditingLabel = true, editLabelText = it.esim?.userLabel ?: "")
+
+            EsimDetailsAction.ShowQrCode -> {
+                _state.update { it.copy(showQrCodeSheet = true) }
             }
-            is EsimDetailsAction.UpdateLabelText -> _state.update { it.copy(editLabelText = action.text) }
+            EsimDetailsAction.DismissQrCode -> {
+                _state.update { it.copy(showQrCodeSheet = false) }
+            }
+
+            EsimDetailsAction.ShowOperators -> {
+                _state.update { it.copy(showOperatorsSheet = true) }
+            }
+            EsimDetailsAction.DismissOperators -> {
+                _state.update { it.copy(showOperatorsSheet = false) }
+            }
+
+            EsimDetailsAction.StartEditLabel -> startEditLabel()
+            is EsimDetailsAction.UpdateLabelText -> {
+                _state.update { it.copy(editLabelText = action.text) }
+            }
             EsimDetailsAction.SaveLabel -> saveLabel()
             EsimDetailsAction.CancelEditLabel -> cancelEditLabel()
-            EsimDetailsAction.TopUpClick -> viewModelScope.launch {
-                _events.send(EsimDetailsEvent.NavigateToTopUp(routeArgs.esimId))
+
+            EsimDetailsAction.TopUpClick -> {
+                viewModelScope.launch {
+                    _events.send(EsimDetailsEvent.NavigateToTopUp(routeArgs.esimId))
+                }
             }
-            // დანარჩენი Action-ები...
-            else -> Unit
+
+            EsimDetailsAction.DeleteClick -> {
+                // TODO: Show delete confirmation dialog
+            }
+            EsimDetailsAction.ConfirmDelete -> {
+                // TODO: Delete eSIM
+            }
+            EsimDetailsAction.CancelDelete -> {
+                // TODO: Dismiss delete dialog
+            }
         }
     }
 
     private fun loadEsimDetails() {
+        if (_state.value.isLoading) return
+
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            // TODO: აქ შენი ლოგიკით ამოიღებ ე-სიმის დეტალებს (მაგალითად ლოკალური ბაზიდან ან API-დან)
-            // ამ ეტაპზე ველოდებით bundleInfo-ს, ამიტომ isLoading სტატუსს getEsimBundles დაარეგულირებს
-            _state.update { it.copy(isLoading = false) }
-        }
-    }
 
-    private fun loadBundles(isRefresh: Boolean) {
-        viewModelScope.launch {
-            if (isRefresh) {
-                _state.update { it.copy(isRefreshing = true, bundlesError = null) }
-            } else {
-                _state.update { it.copy(isLoading = true, bundlesError = null) }
-            }
-
-            when (val result = repository.getEsimBundles(routeArgs.esimId)) {
+           /* when (val result = repository.getEsimById(routeArgs.esimId)) {
                 is Resource.Success -> {
                     _state.update {
                         it.copy(
-                            bundleInfo = result.data,
                             isLoading = false,
-                            isRefreshing = false,
-                            bundlesError = null
+                            esim = result.data,
+                            error = null
                         )
                     }
                 }
@@ -100,25 +110,67 @@ class EsimDetailsViewModel(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            isRefreshing = false,
-                            bundlesError = result.error
+                            error = result.error
                         )
                     }
-                    _events.send(EsimDetailsEvent.ShowError("Failed to load bundles"))
                 }
-            }
+            }*/
+        }
+    }
+
+    private fun startEditLabel() {
+        val currentLabel = _state.value.esim?.userLabel ?: ""
+        _state.update {
+            it.copy(
+                isEditingLabel = true,
+                editLabelText = currentLabel
+            )
         }
     }
 
     private fun saveLabel() {
-        // არსებული ლოგიკა...
+        val newLabel = _state.value.editLabelText.trim()
+        if (newLabel.isEmpty()) {
+            cancelEditLabel()
+            return
+        }
+
+        viewModelScope.launch {
+            _state.update { it.copy(isUpdatingLabel = true) }
+
+            /*when (val result = repository.updateEsimLabel(routeArgs.esimId, newLabel)) {
+                is Resource.Success -> {
+                    // Update local state with new label
+                    _state.update { state ->
+                        state.copy(
+                            isUpdatingLabel = false,
+                            isEditingLabel = false,
+                            esim = state.esim?.copy(userLabel = newLabel)
+                        )
+                    }
+                    _events.send(EsimDetailsEvent.ShowMessage("ლეიბლი განახლდა"))
+                }
+                is Resource.Failure -> {
+                    _state.update { it.copy(isUpdatingLabel = false) }
+                    _events.send(EsimDetailsEvent.ShowError("ლეიბლის განახლება ვერ მოხერხდა"))
+                }
+            }*/
+        }
     }
 
     private fun cancelEditLabel() {
-        _state.update { it.copy(isEditingLabel = false, editLabelText = "") }
+        _state.update {
+            it.copy(
+                isEditingLabel = false,
+                editLabelText = ""
+            )
+        }
     }
 }
 
+/**
+ * One-shot events emitted by the ViewModel.
+ */
 sealed interface EsimDetailsEvent {
     data class NavigateToTopUp(val esimId: String) : EsimDetailsEvent
     data class ShowMessage(val message: String) : EsimDetailsEvent

@@ -14,8 +14,7 @@ import com.mtislab.celvo.feature.myesim.presentation.list.MyEsimListRoot
 @Composable
 actual fun PlatformEsimListScreen(
     onEsimClick: (UserEsim) -> Unit,
-    onAddEsimClick: () -> Unit,
-    onTopUpClick: (UserEsim) -> Unit,
+    onAddEsimClick: () -> Unit
 ) {
     MyEsimListRoot(
         onEsimClick = onEsimClick,

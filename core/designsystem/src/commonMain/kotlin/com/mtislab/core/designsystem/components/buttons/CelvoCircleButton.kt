@@ -43,7 +43,7 @@ fun CelvoCircleButton(
             Icon(
                 painter = icon,
                 contentDescription = null,
-               // modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(20.dp),
                 tint = contentColor
             )
         }

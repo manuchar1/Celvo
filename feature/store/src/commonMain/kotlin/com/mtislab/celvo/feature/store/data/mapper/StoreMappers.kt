@@ -1,15 +1,16 @@
 package com.mtislab.celvo.feature.store.data.mapper
 
-import androidx.compose.ui.graphics.Color
+import MarketingBannerDto
 import com.mtislab.celvo.feature.store.data.dto.CountriesResponseDto
 import com.mtislab.celvo.feature.store.data.dto.DestinationDto
-import com.mtislab.celvo.feature.store.data.dto.MarketingBannerDto
 import com.mtislab.celvo.feature.store.data.dto.RegionsResponseDto
-import com.mtislab.celvo.feature.store.domain.model.BannerType
-import com.mtislab.celvo.feature.store.domain.model.MarketingBanner
 import com.mtislab.celvo.feature.store.domain.model.StoreCountriesData
 import com.mtislab.celvo.feature.store.domain.model.StoreItem
 import com.mtislab.celvo.feature.store.domain.model.StoreItemType
+
+import androidx.compose.ui.graphics.Color
+import com.mtislab.celvo.feature.store.domain.model.BannerType
+import com.mtislab.celvo.feature.store.domain.model.MarketingBanner
 import com.mtislab.celvo.feature.store.domain.model.SupportedCountry
 
 fun CountriesResponseDto.toDomain(): StoreCountriesData {
@@ -46,25 +47,18 @@ fun DestinationDto.toDomain(): StoreItem {
 fun MarketingBannerDto.toDomain(): MarketingBanner {
     return MarketingBanner(
         id = id,
-        title = title ?: "",
-        description = description ?: "",
-        imageUrl = imageUrl ?: "",
-        ctaText = "ნახე მეტი",
-        deepLink = targetUrl ?: "",
-
-        backgroundColor = Color(0xFFF3F0FF), // CelvoPurpleTint ექვივალენტი
-        textColor = Color(0xFF0A0B0C),       // CelvoDark900 ექვივალენტი
-
-        type = when (type?.uppercase()) {
+        title = title,
+        description = description,
+        imageUrl = assetUrl,
+        ctaText = action.label,
+        deepLink = action.deepLink,
+        backgroundColor = parseColor(style.backgroundColor) ?: Color(0xFFF3F0FF), // Default fallback
+        textColor = parseColor(style.textColor) ?: Color.Black,
+        type = when (style.type.uppercase()) {
             "HERO" -> BannerType.HERO
             "SECONDARY" -> BannerType.SECONDARY
             else -> BannerType.UNKNOWN
-        },
-
-        // ახალი ველები Promo Engine-სთვის
-        promoCode = promoCode,
-        claimedTitle = claimedTitle,
-        claimedDescription = claimedDescription
+        }
     )
 }
 

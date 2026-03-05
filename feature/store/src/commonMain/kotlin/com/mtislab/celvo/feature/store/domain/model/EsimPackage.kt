@@ -16,6 +16,7 @@ data class EsimPackage(
     val isoCode: String,
     val originalPrice: Double?,
     val discountPercent: Int?,
+
     val operators: List<PackageOperator>
 )
 

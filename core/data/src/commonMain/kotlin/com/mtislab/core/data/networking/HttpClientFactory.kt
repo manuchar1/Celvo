@@ -29,41 +29,33 @@ class HttpClientFactory(
     fun create(engine: HttpClientEngine): HttpClient {
         return HttpClient(engine) {
             install(ContentNegotiation) {
-                json(
-                    Json {
-                        ignoreUnknownKeys = true
-                        isLenient = true
-                        // prettyPrint = false in production to reduce payload size
-                        prettyPrint = false
-                        coerceInputValues = true
-                    }
-                )
+                json(Json { ignoreUnknownKeys = true; prettyPrint = true; isLenient = true })
             }
 
+            // შეცვლილი: გავზარდეთ Timeout 60 წამამდე, რომ "Request timeout" არ მივიღოთ
+            // სანამ რეფრეში მიმდინარეობს
             install(HttpTimeout) {
-                connectTimeoutMillis = 15_000L
-                requestTimeoutMillis = 30_000L
-                socketTimeoutMillis = 30_000L
+                socketTimeoutMillis = 60_000L
+                requestTimeoutMillis = 60_000L
+                connectTimeoutMillis = 60_000L
             }
 
-            // Production-safe logging: HEADERS level omits body,
-            // and we sanitize the Authorization header below.
             install(Logging) {
                 logger = object : Logger {
                     override fun log(message: String) {
+                        // Debug ლეველი საკმარისია, რომ ლოგები არ გადაიტვირთოს
                         celvoLogger.debug(message)
                     }
                 }
-                level = LogLevel.ALL  // ← Changed from ALL. No body/header dump.
+                level = LogLevel.ALL
             }
 
-            install(WebSockets) {
-                pingIntervalMillis = 20_000L
-            }
+            install(WebSockets) { pingIntervalMillis = 20_000L }
 
             install(Auth) {
                 bearer {
                     loadTokens {
+                        // აქ ვიყენებთ განახლებულ SessionManager-ს (suspend ფუნქციებს)
                         val access = sessionManager.getAccessToken()
                         val refresh = sessionManager.getRefreshToken()
 
@@ -75,21 +67,22 @@ class HttpClientFactory(
                     }
 
                     refreshTokens {
+                        // კრიტიკული ცვლილება: Try-Catch და ლოგირება
                         try {
+                            celvoLogger.debug("Auth: 🔄 Starting token refresh...")
+
                             val newTokens = sessionManager.refreshSession()
 
                             if (newTokens != null) {
+                                celvoLogger.info("Auth: ✅ Token refreshed successfully")
                                 BearerTokens(newTokens.first, newTokens.second)
                             } else {
-                                // SessionManager already handles forced logout
-                                // after MAX_REFRESH_RETRIES
+                                celvoLogger.warn("Auth: ⚠️ Refresh returned null. Force logout needed.")
                                 null
                             }
                         } catch (e: Exception) {
-                            celvoLogger.error(
-                                "[HttpClient] Unexpected error in refreshTokens",
-                                e
-                            )
+                            // აუცილებელია Exception-ის დაჭერა, თორემ Ktor-ი გაიჭედება და Timeout-ს ისვრის
+                            celvoLogger.error("Auth: ❌ Error during refresh", e)
                             null
                         }
                     }
@@ -101,15 +94,5 @@ class HttpClientFactory(
                 contentType(ContentType.Application.Json)
             }
         }
-    }
-
-    /**
-     * Redacts Bearer tokens from log output to prevent token leakage.
-     */
-    private fun sanitizeLogMessage(message: String): String {
-        return message.replace(
-            Regex("Bearer [A-Za-z0-9\\-._~+/]+=*"),
-            "Bearer [REDACTED]"
-        )
     }
 }

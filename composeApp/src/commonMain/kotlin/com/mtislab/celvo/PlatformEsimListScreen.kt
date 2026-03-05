@@ -12,6 +12,5 @@ import com.mtislab.celvo.feature.myesim.domain.model.UserEsim
 @Composable
 expect fun PlatformEsimListScreen(
     onEsimClick: (UserEsim) -> Unit,
-    onAddEsimClick: () -> Unit,
-    onTopUpClick: (UserEsim) -> Unit,
+    onAddEsimClick: () -> Unit
 )

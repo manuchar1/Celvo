@@ -69,18 +69,21 @@ class RegisterViewModel(
         }
     }
 
-
-    private suspend fun handleAuthResult(result: Resource<AuthData, DataError.Remote>) {
+    // ✅ განახლებული Helper Function
+    // იღებს AuthData-ს და ინახავს SessionManager-ში
+    private fun handleAuthResult(result: Resource<AuthData, DataError.Remote>) {
         when(result) {
             is Resource.Success -> {
                 val data = result.data
 
+                // 💾 ვინახავთ სესიას ლოკალურად
                 sessionManager.onLoginSuccess(
                     accessToken = data.accessToken,
                     refreshToken = data.refreshToken,
                     userId = data.userId
                 )
 
+                // UI-ს ვატყობინებთ წარმატებას
                 _state.update { it.copy(isLoading = false, isLoggedIn = true) }
             }
             is Resource.Failure -> {

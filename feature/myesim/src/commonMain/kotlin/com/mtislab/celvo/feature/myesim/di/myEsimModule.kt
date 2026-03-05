@@ -5,21 +5,22 @@ import com.mtislab.celvo.feature.myesim.data.repository.MyEsimRepositoryImpl
 import com.mtislab.celvo.feature.myesim.domain.repository.MyEsimRepository
 import com.mtislab.celvo.feature.myesim.presentation.details.EsimDetailsViewModel
 import com.mtislab.celvo.feature.myesim.presentation.list.MyEsimListViewModel
-import com.mtislab.core.domain.utils.CacheClearable
-import org.koin.core.module.dsl.binds
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
+/**
+ * Koin dependency injection module for My eSim feature.
+ * Following the same pattern as storeModule and profileModule.
+ */
 val myEsimModule = module {
+
+    // Data Layer
     singleOf(::MyEsimRemoteService)
-    single<MyEsimRepository> {
-        MyEsimRepositoryImpl(
-            remoteService = get(),
-            sessionController = get()
-        )
-    }
+    singleOf(::MyEsimRepositoryImpl).bind<MyEsimRepository>()
+
+    // Presentation Layer
     viewModelOf(::MyEsimListViewModel)
     viewModelOf(::EsimDetailsViewModel)
 }

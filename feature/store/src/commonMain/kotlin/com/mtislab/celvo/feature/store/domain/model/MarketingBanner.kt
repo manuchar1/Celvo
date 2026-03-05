@@ -2,6 +2,10 @@ package com.mtislab.celvo.feature.store.domain.model
 
 import androidx.compose.ui.graphics.Color
 
+/**
+ * Domain model representing a marketing banner.
+ * Updated to support remote assets and dynamic styling from API.
+ */
 data class MarketingBanner(
     val id: String,
     val title: String,
@@ -11,12 +15,7 @@ data class MarketingBanner(
     val deepLink: String,
     val backgroundColor: Color,
     val textColor: Color,
-    val type: BannerType,
-
-    // ★ NEW FIELDS: Required for the interactive Promo Engine ★
-    val promoCode: String? = null,
-    val claimedTitle: String? = null,
-    val claimedDescription: String? = null
+    val type: BannerType
 )
 
 enum class BannerType {

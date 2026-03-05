@@ -31,10 +31,6 @@ kotlin {
                 implementation(libs.androidx.credentials.play.services.auth)
                 implementation(libs.googleid)
                 implementation(libs.androidx.browser)
-                implementation(libs.google.pay.compose.button)
-                implementation(libs.google.pay.wallet)
-                implementation(libs.kotlinx.coroutines.play.services)
-                implementation(libs.androidx.activity.compose)
             }
         }
 

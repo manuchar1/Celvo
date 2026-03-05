@@ -28,8 +28,6 @@ kotlin {
             dependencies {
                implementation(libs.ktor.client.okhttp)
                 implementation(libs.koin.android)
-                implementation(libs.google.pay.wallet)
-                implementation(libs.kotlinx.coroutines.play.services)
             }
         }
 

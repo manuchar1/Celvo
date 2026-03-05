@@ -226,10 +226,10 @@ fun RegisterScreen(
                         // Google
                         CelvoButton(
                             text = "Google-ით შესვლა",
-                            leadingIcon = painterResource(Res.drawable.ic_google_logo),
+                            icon = painterResource(Res.drawable.ic_google_logo),
                             onClick = onGoogleSignInClick,
                             contentColor = MaterialTheme.colorScheme.onSurface,
-                           // borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                            borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                         )
 
                         // Apple
@@ -237,10 +237,10 @@ fun RegisterScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             CelvoButton(
                                 text = "Apple-ით შესვლა",
-                                leadingIcon = painterResource(Res.drawable.ic_apple_logo),
+                                icon = painterResource(Res.drawable.ic_apple_logo),
                                 onClick = onAppleSignInClick,
                                 contentColor = MaterialTheme.colorScheme.onSurface,
-                               // borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                                borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                             )
                         }
 
