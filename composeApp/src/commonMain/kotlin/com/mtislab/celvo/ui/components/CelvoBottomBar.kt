@@ -33,7 +33,7 @@ fun CelvoBottomBar(
 
     NavigationBar(
         modifier = modifier
-            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)), // მრგვალი კუთხეები
+            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
         containerColor = containerColor,
         tonalElevation = 0.dp
     ) {
@@ -54,12 +54,12 @@ fun CelvoBottomBar(
                 },
                 icon = {
                     Icon(
-                        painter = painterResource(item.icon), // 👈 SVG-ს ხატავს
+                        painter = painterResource(item.icon),
                         contentDescription = stringResource(item.name)
                     )
                 },
                 label = {
-                    Text(stringResource(item.name)) // 👈 ენას ცვლის ავტომატურად
+                    Text(stringResource(item.name))
                 },
                 colors = NavigationBarItemDefaults.colors(
                     indicatorColor = indicatorColor,

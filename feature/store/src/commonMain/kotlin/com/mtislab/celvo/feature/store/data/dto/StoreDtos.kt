@@ -45,5 +45,6 @@ data class PaymentInitiateRequestDto(
 
 @Serializable
 data class PaymentInitiateResponseDto(
-    @SerialName("redirectUrl") val redirectUrl: String
+    @SerialName("redirectUrl") val redirectUrl: String,
+    @SerialName("orderId") val orderId: String? = null
 )

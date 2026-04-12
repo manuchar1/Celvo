@@ -42,6 +42,7 @@ import com.mtislab.celvo.feature.auth.presentation.platform
 import com.mtislab.celvo.feature.auth.presentation.register.components.OnboardingSlidingContent
 import com.mtislab.celvo.feature.auth.presentation.register.components.PagerIndicator
 import com.mtislab.celvo.feature.auth.presentation.register.components.RegisterTopBar
+import com.mtislab.core.designsystem.components.auth.rememberAppleAuthProvider
 import com.mtislab.core.designsystem.components.auth.rememberGoogleAuthProvider
 import com.mtislab.core.designsystem.components.buttons.CelvoButton
 import com.mtislab.core.designsystem.theme.PlusJakartaSans
@@ -59,6 +60,7 @@ fun RegisterRoot(
     val snackbarHostState = remember { SnackbarHostState() }
 
     val googleAuthProvider = rememberGoogleAuthProvider()
+    val appleAuthProvider = rememberAppleAuthProvider()
     val isAndroid = platform().contains("Android", ignoreCase = true)
 
     LaunchedEffect(state.isLoggedIn) {
@@ -78,11 +80,13 @@ fun RegisterRoot(
         isAndroid = isAndroid,
         snackbarHostState = snackbarHostState,
         onGoogleSignInClick = {
-            val provider = if (isAndroid) googleAuthProvider else null
-            viewModel.onAction(RegisterAction.OnGoogleSignInClick(provider))
+            viewModel.onAction(RegisterAction.OnGoogleSignInClick(googleAuthProvider))
         },
         onAppleSignInClick = {
-            viewModel.onAction(RegisterAction.OnAppleSignInClick)
+            // Pass the native provider on iOS; the ViewModel tries native
+            // first and falls back to the web flow if it returns failure.
+            val provider = if (!isAndroid) appleAuthProvider else null
+            viewModel.onAction(RegisterAction.OnAppleSignInClick(provider))
         },
         onSkipClick = onSkipClick
     )

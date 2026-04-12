@@ -29,7 +29,17 @@ data class EsimBundle(
     val remainingBytes: Long,
     val usedBytes: Long,
     val usagePercent: Int,
-    val remainingDays: Int?,
+    val initialFormatted: String,
+    val remainingFormatted: String,   // დაემატა
+    val usedFormatted: String,        // დაემატა
+    val isUnlimited: Boolean,         // სახელი შესწორდა სერვერის მიხედვით
+    val startTime: String?,           // დაემატა
     val endTime: String?,
-    val unlimited: Boolean
+    val remainingDays: Int?,
+    val duration: String?,
+    val expiryDate: String?,
+    val assignmentId: String?,
+    val countryCode: String,          // დაემატა
+    val countryName: String,          // დაემატა
+    val flagUrl: String               // დაემატა
 )

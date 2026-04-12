@@ -22,6 +22,20 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
 
+            <!--
+                Payment result deep link.
+
+                Flow: User pays in BOG → BOG redirects to
+                      https://api.celvoapp.com/payment/result/{success|fail}
+                    → Android intercepts this URL before it reaches the server
+                    → App opens via onNewIntent → DeepLinkHandler
+                    → PendingPaymentStore provides the cached orderId
+                    → Navigates to PaymentVerification screen
+
+                The orderId is cached in PendingPaymentStore BEFORE the browser
+                opens, so we don't need it from the URL.
+            -->
+            <!-- HTTPS App Link for api.celvoapp.com (Android intercepts BOG redirect) -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -30,6 +44,17 @@
                 <data android:scheme="https" />
                 <data android:host="api.celvoapp.com" />
                 <data android:pathPrefix="/payment/result" />
+            </intent-filter>
+
+            <!-- Custom scheme fallback (used by iOS and server HTML redirect page) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="com.mtislab.celvo" />
+                <data android:host="payment" />
+                <data android:pathPrefix="/result" />
             </intent-filter>
 
         </activity>

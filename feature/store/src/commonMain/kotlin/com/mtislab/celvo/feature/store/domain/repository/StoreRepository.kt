@@ -11,14 +11,23 @@ import com.mtislab.celvo.feature.store.domain.model.StoreItem
 import com.mtislab.celvo.feature.store.domain.model.WalletPaymentRequest
 import com.mtislab.celvo.feature.store.domain.model.WalletPaymentResult
 import com.mtislab.core.domain.model.ActiveEsimHome
+import com.mtislab.core.domain.model.EsimHomePackage
+import com.mtislab.core.domain.payment.PaymentVerificationRepository
+import com.mtislab.core.domain.payment.PaymentVerificationResult
 import com.mtislab.core.domain.utils.DataError
 import com.mtislab.core.domain.utils.Resource
 
-interface StoreRepository {
+interface StoreRepository : PaymentVerificationRepository {
     suspend fun getCountries(): Resource<StoreCountriesData, DataError.Remote>
     suspend fun getRegions(): Resource<List<StoreItem>, DataError.Remote>
 
-    suspend fun getBanners(): Resource<List<MarketingBanner>, DataError.Remote>
+    /**
+     * Fetches marketing banners for the given screen [placement].
+     *
+     * Valid placements: `"HOME"`, `"STORE"`, `"POST_PURCHASE"`, `"UNIVERSAL"`.
+     */
+    suspend fun getBanners(placement: String): Resource<List<MarketingBanner>, DataError.Remote>
+
     suspend fun getPackages(destination: String): Resource<List<EsimPackage>, DataError.Remote>
 
     suspend fun getPackageById(id: String): EsimPackage?
@@ -27,6 +36,8 @@ interface StoreRepository {
 
 
     suspend fun getEsimHome(): Resource<ActiveEsimHome?, DataError.Remote>
+
+    suspend fun getEsimPackages(iccid: String): Resource<List<EsimHomePackage>, DataError.Remote>
 
     suspend fun validatePromo(
         request: PromoValidationRequest

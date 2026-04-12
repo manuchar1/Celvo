@@ -1,11 +1,25 @@
 plugins {
     alias(libs.plugins.convention.cmp.library)
     alias(libs.plugins.convention.buildkonfig)
+    kotlin("native.cocoapods")
 
 }
 
 kotlin {
     jvm()
+
+    cocoapods {
+        summary = "Google Sign In Framework"
+        homepage = "https://github.com/google/GoogleSignIn-iOS"
+        version = "1.0"
+        ios.deploymentTarget = "14.0"
+        podfile = project.file("../../iosApp/Podfile")
+
+        pod("GoogleSignIn") {
+            version = "9.1.0"
+        }
+    }
+
 
     sourceSets {
         commonMain {

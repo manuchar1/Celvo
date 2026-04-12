@@ -17,6 +17,8 @@ import com.mtislab.celvo.feature.store.domain.model.WalletPaymentRequest
 import com.mtislab.celvo.feature.store.domain.model.WalletPaymentResult
 import com.mtislab.celvo.feature.store.domain.repository.StoreRepository
 import com.mtislab.core.domain.model.ActiveEsimHome
+import com.mtislab.core.domain.model.EsimHomePackage
+import com.mtislab.core.domain.payment.PaymentVerificationResult
 import com.mtislab.core.domain.utils.DataError
 import com.mtislab.core.domain.utils.Resource
 import com.mtislab.core.domain.utils.map
@@ -48,8 +50,12 @@ class StoreRepositoryImpl(
         }
     }
 
-    override suspend fun getBanners(): Resource<List<MarketingBanner>, DataError.Remote> {
-        return remoteService.getMarketingBanners().map { dtoList ->
+    /**
+     * Banners are intentionally NOT cached — the backend filters by [placement]
+     * and may return different sets depending on server-side targeting rules.
+     */
+    override suspend fun getBanners(placement: String): Resource<List<MarketingBanner>, DataError.Remote> {
+        return remoteService.getMarketingBanners(placement).map { dtoList ->
             dtoList.map { it.toDomain() }
         }
     }
@@ -83,7 +89,10 @@ class StoreRepositoryImpl(
             theme = request.theme
         )
         return remoteService.initiatePayment(requestDto).map { responseDto ->
-            PaymentInitiateResult(redirectUrl = responseDto.redirectUrl)
+            PaymentInitiateResult(
+                redirectUrl = responseDto.redirectUrl,
+                orderId = responseDto.orderId
+            )
         }
     }
 
@@ -94,6 +103,12 @@ class StoreRepositoryImpl(
      */
     override suspend fun getEsimHome(): Resource<ActiveEsimHome?, DataError.Remote> {
         return remoteService.getEsimHome().map { dto -> dto.toDomain() }
+    }
+
+    override suspend fun getEsimPackages(iccid: String): Resource<List<EsimHomePackage>, DataError.Remote> {
+        return remoteService.getEsimPackages(iccid).map { dtoList ->
+            dtoList.map { it.toDomain() }
+        }
     }
 
 
@@ -124,6 +139,12 @@ class StoreRepositoryImpl(
             promoCodeId = request.promoCodeId
         )
         return remoteService.processWalletPayment(requestDto).map { it.toDomain() }
+    }
+
+    override suspend fun verifyPayment(
+        orderId: String
+    ): Resource<PaymentVerificationResult, DataError.Remote> {
+        return remoteService.verifyPayment(orderId).map { it.toDomain() }
     }
 
 }

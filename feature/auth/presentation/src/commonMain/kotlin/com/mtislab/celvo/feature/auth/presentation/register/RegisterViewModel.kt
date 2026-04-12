@@ -2,6 +2,7 @@ package com.mtislab.celvo.feature.auth.presentation.register
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mtislab.core.domain.auth.AppleAuthProvider
 import com.mtislab.core.domain.auth.GoogleAuthProvider
 import com.mtislab.core.data.session.SessionManager
 import com.mtislab.core.domain.model.AuthData
@@ -30,21 +31,35 @@ class RegisterViewModel(
     fun onAction(action: RegisterAction) {
         when (action) {
             is RegisterAction.OnGoogleSignInClick -> loginWithGoogle(action.provider)
-            is RegisterAction.OnAppleSignInClick -> loginWithApple()
+            is RegisterAction.OnAppleSignInClick -> loginWithApple(action.provider)
         }
     }
 
-    private fun loginWithApple() {
+    private fun loginWithApple(provider: AppleAuthProvider?) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
-            // Apple Logic: Supabase Handles everything
-            // შედეგს ვატარებთ handleAuthResult-ში, რადგან ისიც აბრუნებს Resource<AuthData>
-            handleAuthResult(authRepository.signInWithApple())
+            if (provider != null) {
+                // --- NATIVE APPLE SIGN-IN (via ASAuthorization) ---
+                // Try native first; if the provider returns a token, use the
+                // fast IDToken path (no browser redirect).
+                when (val tokenResult = provider.getAppleIdToken()) {
+                    is Resource.Success -> {
+                        handleAuthResult(authRepository.signInWithAppleNative(tokenResult.data))
+                    }
+                    is Resource.Failure -> {
+                        // Native unavailable — fall back to web OAuth.
+                        handleAuthResult(authRepository.signInWithApple())
+                    }
+                }
+            } else {
+                // --- WEB FALLBACK ---
+                handleAuthResult(authRepository.signInWithApple())
+            }
         }
     }
 
-    private fun loginWithGoogle(provider: GoogleAuthProvider?) {
+   /* private fun loginWithGoogle(provider: GoogleAuthProvider?) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
@@ -65,6 +80,28 @@ class RegisterViewModel(
                 // --- iOS SCENARIO (Web Flow) ---
                 // Supabase handles the flow via Browser
                 handleAuthResult(authRepository.signInWithGoogleWeb())
+            }
+        }
+    }*/
+
+    private fun loginWithGoogle(provider: GoogleAuthProvider?) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+
+            if (provider == null) {
+                _state.update { it.copy(isLoading = false, error = DataError.Local.UNKNOWN) }
+                return@launch
+            }
+
+            // ახლა iOS-იც და Android-იც ერთსა და იმავე Native ლოგიკას გამოიყენებს!
+            when(val tokenResult = provider.getGoogleIdToken()) {
+                is Resource.Success -> {
+                    // ორივე პლატფორმა პირდაპირ idToken-ს აწვდის Supabase-ს
+                    handleAuthResult(authRepository.signInWithGoogle(tokenResult.data))
+                }
+                is Resource.Failure -> {
+                    _state.update { it.copy(isLoading = false, error = tokenResult.error) }
+                }
             }
         }
     }

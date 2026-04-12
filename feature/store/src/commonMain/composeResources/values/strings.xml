@@ -21,5 +21,8 @@
     <string name="have_promo_or_referral_code">Have a promo/referral code?</string>
     <string name="enter_code">Enter code</string>
     <string name="card">Card</string>
+    <string name="packages_loading">Loading packages…</string>
+    <string name="packages_load_failed">Could not load data</string>
+    <string name="gauge_syncing">Syncing…</string>
 
 </resources>

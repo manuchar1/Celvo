@@ -23,5 +23,8 @@
     <string name="have_promo_or_referral_code">გაქვს პრომო ან მოწვევის კოდი?</string>
     <string name="enter_code">შეიყვანეთ კოდი</string>
     <string name="card">საბანკო ბარათი</string>
+    <string name="packages_loading">პაკეტები იტვირთება…</string>
+    <string name="packages_load_failed">მონაცემების ჩატვირთვა ვერ მოხერხდა</string>
+    <string name="gauge_syncing">სინქრონიზაცია…</string>
 
 </resources>

@@ -15,4 +15,21 @@
     <string name="section_all_countries">All countries</string>
     <string name="section_regional_plans">Regional plans</string>
     <string name="action_retry">Try again</string>
+
+    <string name="no_internet_title">Connection failed</string>
+    <string name="no_internet_message">Check your internet connection and try again.</string>
+    <string name="no_internet_retry">Refresh</string>
+    <string name="no_internet_view_instructions">View Instructions</string>
+
+    <string name="offline_instructions_title">Instructions</string>
+    <string name="offline_instructions_step1_title">Step 1: Purchase an eSIM</string>
+    <string name="offline_instructions_step1_body">Choose a data plan for your destination country. After payment is confirmed, your eSIM profile will be automatically provisioned and ready for installation.</string>
+    <string name="offline_instructions_step2_title">Step 2: Install eSIM</string>
+    <string name="offline_instructions_step2_body">Open your eSIM details and tap "Install". Your device will download the eSIM profile automatically. Make sure you have an active internet connection during installation.</string>
+    <string name="offline_instructions_step3_title">Step 3: Activate before travel</string>
+    <string name="offline_instructions_step3_body">Go to Settings → Cellular/Mobile Data and turn on your new eSIM line. We recommend activating your eSIM before departing so everything is ready when you land.</string>
+    <string name="offline_instructions_step4_title">Step 4: Turn on Data Roaming</string>
+    <string name="offline_instructions_step4_body">Once you arrive at your destination, enable Data Roaming for the eSIM line in your device settings. Your data plan will start automatically.</string>
+    <string name="offline_instructions_note_title">Important</string>
+    <string name="offline_instructions_note_body">Your device must support eSIM technology. Most modern smartphones released after 2018 support eSIM. If you encounter any issues, please contact our support team.</string>
 </resources>

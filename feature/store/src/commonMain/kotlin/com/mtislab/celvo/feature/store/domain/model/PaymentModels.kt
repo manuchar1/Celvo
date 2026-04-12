@@ -13,5 +13,6 @@ data class PaymentInitiateRequest(
 )
 
 data class PaymentInitiateResult(
-    val redirectUrl: String
+    val redirectUrl: String,
+    val orderId: String? = null
 )

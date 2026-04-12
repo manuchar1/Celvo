@@ -22,17 +22,17 @@ sealed interface StoreState {
         val regions: List<StoreItem> = emptyList(),
         val topPicks: List<StoreItem> = emptyList(),
         val allCountries: List<StoreItem> = emptyList(),
+        val isLoadingPackages: Boolean = false,
+        val packagesError: String? = null,
         val isInstalling: Boolean = false,
         val installingEsimId: String? = null,
         val installationError: String? = null,
-        val claimedPromoCode: String? = null
+        // NOTE: claimedPromoCode removed — claim state is now on each
+        // MarketingBanner.isClaimed, merged reactively by the ViewModel.
     ) : StoreState {
 
         /** The currently displayed eSIM based on [selectedEsimIndex]. */
         val selectedEsim: UserEsim?
             get() = activeEsimHome?.esims?.getOrNull(selectedEsimIndex)
-
-
-
     }
 }

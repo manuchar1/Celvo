@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mtislab.core.designsystem.components.effects.CelvoGlow
+import com.mtislab.core.designsystem.theme.extended
 
 @Composable
 fun CelvoGlowCard(
@@ -25,12 +27,14 @@ fun CelvoGlowCard(
     glowAlignment: Alignment = Alignment.TopEnd,
     glowOffsetX: Dp = 0.dp,
     glowOffsetY: Dp = 0.dp,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
+
 ) {
     CelvoCard(
         modifier = modifier,
         onClick = onClick,
         border = border,
+        containerColor = MaterialTheme.colorScheme.extended.background,
         contentPadding = PaddingValues(0.dp)
     ) {
         Box(

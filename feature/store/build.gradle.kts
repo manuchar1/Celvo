@@ -18,4 +18,7 @@ dependencies {
     commonMainImplementation(libs.coil.network.ktor)
     commonMainImplementation(projects.core.designsystem)
     commonMainImplementation(compose.components.resources)
+    commonMainImplementation(libs.kotlinx.datetime)
+    commonMainImplementation(libs.datastore)
+    commonMainImplementation(libs.datastore.preferences)
 }

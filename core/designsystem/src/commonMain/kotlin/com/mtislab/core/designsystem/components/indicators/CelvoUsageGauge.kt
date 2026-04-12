@@ -102,33 +102,70 @@ fun CelvoUsageGauge(
             .padding(strokeWidth / 2),
         contentAlignment = Alignment.Center,
     ) {
-        // ── Canvas: segmented arcs ──
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val componentSize = size.minDimension
-           // val arcSize = Size(componentSize, componentSize)
             val arcSize = Size(size.width, size.width)
             val strokePx = strokeWidth.toPx()
 
-            // How many segments are filled at the current animation frame
-            val filledCount = (animatable.value * segmentCount).roundToInt()
-
-            // Sweep per individual segment
             val totalGapsAngle = (segmentCount - 1) * gapAngleDeg
             val segmentSweep = (sweepAngleDeg - totalGapsAngle) / segmentCount
 
+            // Continuous fill angle (not quantized to segments)
+            val fillAngle = animatable.value * sweepAngleDeg
+
             for (i in 0 until segmentCount) {
                 val segStart = startAngle + i * (segmentSweep + gapAngleDeg)
-                val color = if (i < filledCount) primaryColor else trackColor
+                val segEnd = segStart + segmentSweep
 
-                drawArc(
-                    color = color,
-                    startAngle = segStart,
-                    sweepAngle = segmentSweep,
-                    useCenter = false,
-                    style = Stroke(width = strokePx, cap = StrokeCap.Butt),
-                    size = arcSize,
+                // How far into the total sweep does this segment start/end?
+                val segStartInSweep = i * (segmentSweep + gapAngleDeg)
+                val segEndInSweep = segStartInSweep + segmentSweep
 
-                )
+                when {
+                    // Fully filled segment
+                    fillAngle >= segEndInSweep -> {
+                        drawArc(
+                            color = primaryColor,
+                            startAngle = segStart,
+                            sweepAngle = segmentSweep,
+                            useCenter = false,
+                            style = Stroke(width = strokePx, cap = StrokeCap.Butt),
+                            size = arcSize,
+                        )
+                    }
+                    // Partially filled segment (the boundary)
+                    fillAngle > segStartInSweep -> {
+                        // Draw track (background) for full segment
+                        drawArc(
+                            color = trackColor,
+                            startAngle = segStart,
+                            sweepAngle = segmentSweep,
+                            useCenter = false,
+                            style = Stroke(width = strokePx, cap = StrokeCap.Butt),
+                            size = arcSize,
+                        )
+                        // Overlay primary for the filled portion
+                        val filledPortion = fillAngle - segStartInSweep
+                        drawArc(
+                            color = primaryColor,
+                            startAngle = segStart,
+                            sweepAngle = filledPortion,
+                            useCenter = false,
+                            style = Stroke(width = strokePx, cap = StrokeCap.Butt),
+                            size = arcSize,
+                        )
+                    }
+                    // Fully unfilled segment
+                    else -> {
+                        drawArc(
+                            color = trackColor,
+                            startAngle = segStart,
+                            sweepAngle = segmentSweep,
+                            useCenter = false,
+                            style = Stroke(width = strokePx, cap = StrokeCap.Butt),
+                            size = arcSize,
+                        )
+                    }
+                }
             }
         }
 

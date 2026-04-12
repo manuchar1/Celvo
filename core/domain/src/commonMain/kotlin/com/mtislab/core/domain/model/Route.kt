@@ -54,11 +54,13 @@ sealed interface Route {
 
 
     @Serializable
-    data class PaymentResult(
-        val isSuccess: Boolean,
-        val orderId: String? = null
-    )
+    data class PaymentVerification(
+        val orderId: String
+    ) : Route
 
+
+    @Serializable
+    data object OfflineInstructions : Route
 
     @Serializable
     data class EsimDetailsRoute(
@@ -72,7 +74,7 @@ sealed interface Route {
         val focusSearch: Boolean = false
     ) : Route
 
-
+    @Serializable
     enum class SearchTab {
         COUNTRY, REGION
     }

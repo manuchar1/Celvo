@@ -1,6 +1,7 @@
 package com.mtislab.core.data.di
 
 import com.mtislab.core.data.BuildKonfig
+import com.mtislab.core.data.auth.SupabaseDeepLinkHandler
 import com.mtislab.core.data.logging.KermitLogger
 import com.mtislab.core.data.networking.HttpClientFactory
 import com.mtislab.core.data.session.DataStoreTokenStorage
@@ -29,8 +30,16 @@ val coreDataModule = module {
             supabaseUrl = BuildKonfig.SUPABASE_URL,
             supabaseKey = BuildKonfig.SUPABASE_KEY
         ) {
-            install(Auth)
+            install(Auth) {
+                scheme = "com.mtislab.celvo"
+                host = "login-callback"
+            }
         }
+    }
+
+    // --- Deep-link → Supabase Auth handler (needed for iOS OAuth) ---
+    single {
+        SupabaseDeepLinkHandler(supabase = get())
     }
 
     single<CelvoLogger> { KermitLogger }
@@ -53,4 +62,10 @@ val coreDataModule = module {
     factoryOf(::InstallEsimUseCase)
 
     singleOf(::EsimLinkGenerator)
+
+    // Eagerly start listening for auth deep links so the handler is
+    // ready before any onOpenURL callback fires on iOS.
+    single<Unit>(createdAtStart = true) {
+        get<SupabaseDeepLinkHandler>().startListening()
+    }
 }

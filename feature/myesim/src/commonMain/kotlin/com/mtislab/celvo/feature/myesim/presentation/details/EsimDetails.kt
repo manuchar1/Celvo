@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -44,13 +46,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import celvo.feature.myesim.generated.resources.Res
 import celvo.feature.myesim.generated.resources.ic_network_broadcast
 import celvo.feature.myesim.generated.resources.ic_validity_period
-
-import com.mtislab.celvo.feature.myesim.data.dto.BundleDto
+import coil3.compose.AsyncImage
 import com.mtislab.celvo.feature.myesim.data.mapper.toPackageInfoCardData
 import com.mtislab.celvo.feature.myesim.domain.model.EsimBundle
 import com.mtislab.celvo.feature.myesim.domain.model.EsimStatus
-
-import com.mtislab.core.designsystem.components.buttons.CelvoButton
 import com.mtislab.core.designsystem.components.buttons.CelvoCircleButton
 import com.mtislab.core.designsystem.components.cards.CelvoCard
 import com.mtislab.core.designsystem.components.cards.PackageInfoRow
@@ -58,8 +57,6 @@ import com.mtislab.core.designsystem.components.cards.ProductInfoCard
 import com.mtislab.core.designsystem.components.headers.CelvoDetailHeader
 import com.mtislab.core.designsystem.components.indicators.CelvoUsageGauge
 import com.mtislab.core.designsystem.components.switchers.CelvoTabSwitcher
-import com.mtislab.core.designsystem.theme.CelvoDark900
-import com.mtislab.core.designsystem.theme.CelvoGreen500
 import com.mtislab.core.designsystem.theme.CelvoGreen500Alpha15
 import com.mtislab.core.designsystem.theme.CelvoPurple500Alpha15
 import com.mtislab.core.designsystem.theme.CelvoRose500Alpha15
@@ -67,6 +64,7 @@ import com.mtislab.core.designsystem.theme.PlusJakartaSans
 import com.mtislab.core.designsystem.theme.extended
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
+import kotlin.math.round
 
 @Composable
 fun EsimDetailsRoot(
@@ -132,7 +130,7 @@ fun EsimDetailsScreen(
 
                 if (state.isLoading && state.bundleInfo == null) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.extended.success)
                     }
                 } else if (state.bundleInfo != null) {
                     // Tab Switcher
@@ -151,7 +149,7 @@ fun EsimDetailsScreen(
                     // Content
                     when (selectedTab) {
                         EsimDetailsState.EsimDetailTab.CURRENT -> CurrentBundlesTabContent(
-                            activeBundle = state.bundleInfo.activeBundle as BundleDto?,
+                            activeBundle = state.bundleInfo.activeBundle,
                             queuedBundles = state.bundleInfo.queuedBundles
                         )
                         EsimDetailsState.EsimDetailTab.HISTORY -> HistoryBundlesTabContent(
@@ -175,7 +173,7 @@ fun EsimDetailsScreen(
 
 @Composable
 private fun CurrentBundlesTabContent(
-    activeBundle: BundleDto?,
+    activeBundle: EsimBundle?,
     queuedBundles: List<EsimBundle>
 ) {
     LazyColumn(
@@ -213,14 +211,7 @@ private fun CurrentBundlesTabContent(
         // 2. Queued Bundles
         if (queuedBundles.isNotEmpty()) {
             items(queuedBundles) { bundle ->
-                PackageCard(
-                    bundle = bundle,
-
-                )
-
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    Text("Queued: ${bundle.displayName}")
-                }
+                PackageCard(bundle = bundle)
             }
         }
     }
@@ -236,8 +227,6 @@ private fun PackageCard(
 
     CelvoCard(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-
-        //onClick = onDetailsClick
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -250,10 +239,19 @@ private fun PackageCard(
                 modifier = Modifier.weight(1f)
             ) {
 
-                CelvoCircleButton(icon = painterResource(Res.drawable.ic_network_broadcast), onClick = {})
+                AsyncImage(
+                    model = bundle.flagUrl,
+                    contentDescription = "Country Flag",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                )
+
 
                 Text(
-                    text = "Esim #${bundle.displayName}",
+                    text = bundle.countryName,
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.textPrimary,
                     maxLines = 1,
@@ -261,7 +259,7 @@ private fun PackageCard(
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
-            StatusBadge(status = EsimStatus.ACTIVE, label = bundle.state)
+            StatusBadge(status = EsimStatus.ACTIVE, label = bundle.stateDisplayName)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -272,8 +270,15 @@ private fun PackageCard(
         ) {
             EsimInfoRow(
                 icon = Res.drawable.ic_network_broadcast,
-                label = "პაკეტი: ${bundle.initialBytes}",
-                value = bundle.usedBytes.toString(),
+                label = bundle.initialFormatted,
+                value = null,
+                valueColor = colors.textPrimary,
+                iconTint = colors.textSecondary
+            )
+            EsimInfoRow(
+                icon = Res.drawable.ic_validity_period,
+                label = "${bundle.initialFormatted}",
+                value = null,
                 valueColor = colors.textPrimary,
                 iconTint = colors.textSecondary
             )
@@ -281,13 +286,25 @@ private fun PackageCard(
            // EsimCountryFlags(countries = esim.supportedCountries)
         }
 
-        HorizontalDivider(
-            modifier = Modifier.padding(vertical = 16.dp),
-            thickness = 1.dp,
-            color = MaterialTheme.colorScheme.extended.cardBorder
-        )
 
     }
+}
+
+
+
+
+fun Long.toSmartGbString(): String {
+    val gb = this / (1024.0 * 1024.0 * 1024.0)
+    val rounded = round(gb * 10.0) / 10.0
+
+    val isWholeNumber = (rounded % 1.0) == 0.0
+    val formattedString = if (isWholeNumber) {
+        rounded.toLong().toString()
+    } else {
+        rounded.toString()
+    }
+
+    return "$formattedString GB"
 }
 
 
@@ -340,7 +357,7 @@ private fun StatusBadge(
 private fun EsimInfoRow(
     icon: org.jetbrains.compose.resources.DrawableResource,
     label: String,
-    value: String,
+    value: String?,
     valueColor: Color = MaterialTheme.colorScheme.extended.textSecondary,
     iconTint: Color = MaterialTheme.colorScheme.extended.textSecondary
 ) {
@@ -365,15 +382,17 @@ private fun EsimInfoRow(
             color = MaterialTheme.colorScheme.extended.textSecondary
         )
 
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodySmall.copy(
-                fontFamily = PlusJakartaSans,
-                fontWeight = FontWeight.Medium,
-                fontSize = 14.sp
-            ),
-            color = valueColor
-        )
+        if (value != null) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontFamily = PlusJakartaSans,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp
+                ),
+                color = valueColor
+            )
+        }
     }
 }
 

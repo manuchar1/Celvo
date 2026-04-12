@@ -2,10 +2,12 @@ package com.mtislab.celvo.feature.store.data.remote
 
 
 import com.mtislab.celvo.feature.store.data.dto.CountriesResponseDto
+import com.mtislab.celvo.feature.store.data.dto.EsimHomePackageDto
 import com.mtislab.celvo.feature.store.data.dto.EsimHomeResponseDto
 import com.mtislab.celvo.feature.store.data.dto.MarketingBannerDto
 import com.mtislab.celvo.feature.store.data.dto.PackageDto
 import com.mtislab.celvo.feature.store.data.dto.PaymentInitiateRequestDto
+import com.mtislab.celvo.feature.store.data.dto.PaymentVerificationResponseDto
 import com.mtislab.celvo.feature.store.data.dto.PaymentInitiateResponseDto
 import com.mtislab.celvo.feature.store.data.dto.PromoValidationRequestDto
 import com.mtislab.celvo.feature.store.data.dto.PromoValidationResponseDto
@@ -29,8 +31,19 @@ class StoreRemoteService(
         return httpClient.get(route = "/api/v1/destinations/regions")
     }
 
-    suspend fun getMarketingBanners(): Resource<List<MarketingBannerDto>, DataError.Remote> {
-        return httpClient.get(route = "/api/v1/marketing/banners")
+    /**
+     * Fetches marketing banners filtered by screen placement.
+     *
+     * @param placement One of: "HOME", "STORE", "POST_PURCHASE", "UNIVERSAL".
+     *                  The backend returns only banners matching the given placement.
+     */
+    suspend fun getMarketingBanners(
+        placement: String
+    ): Resource<List<MarketingBannerDto>, DataError.Remote> {
+        return httpClient.get(
+            route = "/api/v1/marketing/banners",
+            queryParams = mapOf("placement" to placement)
+        )
     }
 
     suspend fun getPackages(destination: String): Resource<List<PackageDto>, DataError.Remote> {
@@ -46,6 +59,10 @@ class StoreRemoteService(
 
     suspend fun getEsimHome(): Resource<EsimHomeResponseDto, DataError.Remote> {
         return httpClient.get(route = "/api/v1/esims/home")
+    }
+
+    suspend fun getEsimPackages(iccid: String): Resource<List<EsimHomePackageDto>, DataError.Remote> {
+        return httpClient.get(route = "/api/v1/esims/$iccid/packages")
     }
 
 
@@ -66,6 +83,12 @@ class StoreRemoteService(
             route = "/api/v1/payments/wallet-pay",
             body = request
         )
+    }
+
+    suspend fun verifyPayment(
+        orderId: String
+    ): Resource<PaymentVerificationResponseDto, DataError.Remote> {
+        return httpClient.get(route = "/api/v1/payments/verify/$orderId")
     }
 
 }

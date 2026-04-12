@@ -1,7 +1,6 @@
 package com.mtislab.celvo.feature.store.presentation.store
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,7 +44,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -57,6 +55,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import celvo.feature.store.generated.resources.Res
 import celvo.feature.store.generated.resources.action_retry
 import celvo.feature.store.generated.resources.action_see_all
+import celvo.feature.store.generated.resources.packages_loading
+import celvo.feature.store.generated.resources.packages_load_failed
 import celvo.feature.store.generated.resources.add_data
 import celvo.feature.store.generated.resources.install
 import celvo.feature.store.generated.resources.my_plans
@@ -74,11 +74,15 @@ import com.celvo.core.designsystem.resources.ic_top_up
 import com.celvo.core.designsystem.resources.search
 import com.celvo.core.designsystem.resources.search_placeholder
 import com.mtislab.celvo.feature.store.presentation.components.MarketingBannerCarousel
-import com.mtislab.core.designsystem.components.buttons.CelvoButton
+import com.mtislab.core.designsystem.components.buttons.CelvoChipButton
 import com.mtislab.core.designsystem.components.buttons.CelvoCircleButton
+import com.mtislab.core.designsystem.components.placeholders.CelvoNoInternetPlaceholder
 import com.mtislab.core.designsystem.components.cards.CelvoCard
 import com.mtislab.core.designsystem.components.indicators.CelvoUsageGauge
 import com.mtislab.core.designsystem.components.items.CelvoRegionItem
+import com.mtislab.core.designsystem.components.notifications.CelvoNotificationData
+import com.mtislab.core.designsystem.components.notifications.CelvoNotificationType
+import com.mtislab.core.designsystem.components.notifications.LocalCelvoNotification
 import com.mtislab.core.designsystem.theme.extended
 import com.mtislab.core.designsystem.theme.titleXSmall
 import com.mtislab.core.domain.model.EsimHomePackage
@@ -95,18 +99,51 @@ fun StoreScreenRoot(
     viewModel: StoreViewModel = koinViewModel(),
     onNavigateToDetails: (String, String, String) -> Unit,
     onNavigateToLogin: () -> Unit,
-    onNavigateToSearch: (Route.SearchTab, Boolean) -> Unit
+    onNavigateToSearch: (Route.SearchTab, Boolean) -> Unit,
+    onViewInstructionsClick: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    val claimedCode by PromoStateHolder.claimedPromoCode.collectAsState()
+    val notificationState = LocalCelvoNotification.current
+
+    val uriHandler = LocalUriHandler.current
+
+
+
+    LaunchedEffect(Unit) {
+
+ /*       notificationState.show(
+            CelvoNotificationData(
+                message = "პრომოკოდი გააქტიურდა",
+                description = "კოდი: ${2233}",
+                type = CelvoNotificationType.Success,
+                durationMillis = 8000L,
+            )
+        )*/
+
+        viewModel.events.collect { event ->
+
+            when (event) {
+                is StoreEvent.PromoClaimSuccess -> {
+                    notificationState.show(
+                        CelvoNotificationData(
+                            message = event.message,
+                            description = "კოდი: ${event.code}",
+                            type = CelvoNotificationType.Success,
+                            durationMillis = 4000L,
+                        )
+                    )
+                }
+            }
+        }
+    }
 
 
     // ── Collect one-shot URL events ──────────────────────────────────────
     // LocalUriHandler is the correct Compose Multiplatform abstraction for
     // opening URLs on both Android (Intent.ACTION_VIEW) and iOS (UIApplication
     // openURL). No expect/actual required.
-    val uriHandler = LocalUriHandler.current
+
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
@@ -150,7 +187,8 @@ fun StoreScreenRoot(
             }
         },
         onLoginClick = onNavigateToLogin,
-        onNavigateToSearch = onNavigateToSearch
+        onNavigateToSearch = onNavigateToSearch,
+        onViewInstructionsClick = onViewInstructionsClick
     )
 }
 
@@ -161,7 +199,8 @@ fun StoreScreen(
     state: StoreState,
     onAction: (StoreAction) -> Unit,
     onLoginClick: () -> Unit,
-    onNavigateToSearch: (Route.SearchTab, Boolean) -> Unit
+    onNavigateToSearch: (Route.SearchTab, Boolean) -> Unit,
+    onViewInstructionsClick: () -> Unit = {}
 ) {
     Scaffold(containerColor = Color.Transparent) { padding ->
         Box(
@@ -178,10 +217,9 @@ fun StoreScreen(
                 }
 
                 is StoreState.Error -> {
-                    ErrorContent(
-                        message = state.message,
-                        onRetry = { onAction(StoreAction.OnRetry) },
-                        modifier = Modifier.align(Alignment.Center)
+                    CelvoNoInternetPlaceholder(
+                        onRetryClick = { onAction(StoreAction.OnRetry) },
+                        onViewInstructionsClick = onViewInstructionsClick
                     )
                 }
 
@@ -248,6 +286,9 @@ private fun HomeContent(
                 EsimSection(
                     esim = selectedEsim,
                     isDataStale = state.isDataStale,
+                    isLoadingPackages = state.isLoadingPackages,
+                    packagesError = state.packagesError,
+                    onRetryLoadPackages = { onAction(StoreAction.OnRetryLoadPackages) },
                     onInstallClick = { onAction(StoreAction.OnInstallClick) },
                     onTopUpClick = { onAction(StoreAction.OnTopUpClick) },
                     onDetailsClick = { onAction(StoreAction.OnDetailsClick) },
@@ -266,20 +307,18 @@ private fun HomeContent(
             }
         }
 
-        // ── 3. Marketing Banners ─────────────────────────────────────────
+// ── 3. Marketing Banners ─────────────────────────────────────────
         if (state.marketingBanners.isNotEmpty()) {
             item(key = "banners") {
                 MarketingBannerCarousel(
                     banners = state.marketingBanners,
-                    // 👉 Read from the strict MVI state
-                    claimedPromoCode = state.claimedPromoCode,
                     onBannerClick = { deepLink ->
                         onAction(StoreAction.OnBannerClick(deepLink))
                     },
-                    // 👉 Fire the pure intent
-                    onClaimCode = { code ->
-                        onAction(StoreAction.OnClaimPromoCode(code))
-                    }
+                    // CHANGED: passes the full banner object instead of a code string
+                    onClaimPromo = { banner ->
+                        onAction(StoreAction.ClaimBannerPromo(banner))
+                    },
                 )
             }
         }
@@ -446,6 +485,9 @@ fun EsimSwitcherChip(
 private fun EsimSection(
     esim: UserEsim,
     isDataStale: Boolean,
+    isLoadingPackages: Boolean,
+    packagesError: String?,
+    onRetryLoadPackages: () -> Unit,
     onInstallClick: () -> Unit,
     onTopUpClick: () -> Unit,
     onDetailsClick: () -> Unit,
@@ -459,34 +501,43 @@ private fun EsimSection(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (packages.isNotEmpty()) {
-            // ── Package Carousel ─────────────────────────────────────────
-            val pagerState = rememberPagerState(pageCount = { packages.size })
-
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxWidth()
-            ) { page ->
-                PackageGaugePage(pkg = packages[page])
+        when {
+            // ── Loading shimmer for packages ─────────────────────────────
+            isLoadingPackages -> {
+                PackageGaugeShimmer(modifier = Modifier.fillMaxWidth())
+                Spacer(modifier = Modifier.height(12.dp))
             }
 
-
-            //Spacer(modifier = Modifier.height(12.dp))
-
-            // ── Status Chip ──────────────────────────────────────────────
-            val currentPkg = packages.getOrNull(pagerState.currentPage)
-            /*     if (currentPkg != null) {
-                     PackageStatusChip(pkg = currentPkg)
-                 }*/
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // ── Dot Indicators ───────────────────────────────────────────
-            if (packages.size > 1) {
-                PagerDotIndicator(
-                    pageCount = packages.size,
-                    currentPage = pagerState.currentPage
+            // ── Error state for packages ─────────────────────────────────
+            packagesError != null -> {
+                PackageGaugeError(
+                    onRetry = onRetryLoadPackages,
+                    modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            // ── Packages loaded and available ────────────────────────────
+            packages.isNotEmpty() -> {
+                // ── Package Carousel ─────────────────────────────────────
+                val pagerState = rememberPagerState(pageCount = { packages.size })
+
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxWidth()
+                ) { page ->
+                    PackageGaugePage(pkg = packages[page])
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // ── Dot Indicators ───────────────────────────────────────
+                if (packages.size > 1) {
+                    PagerDotIndicator(
+                        pageCount = packages.size,
+                        currentPage = pagerState.currentPage
+                    )
+                }
             }
         }
 
@@ -534,25 +585,86 @@ private fun EsimSection(
 private fun PackageGaugePage(
     pkg: EsimHomePackage
 ) {
-    val usedGb = pkg.usedFormatted
-        .filter { it.isDigit() || it == '.' }
-        .toDoubleOrNull() ?: 0.0
-    val totalGb = pkg.initialFormatted
-        .filter { it.isDigit() || it == '.' }
-        .toDoubleOrNull() ?: 1.0
+    val initialGb = pkg.initialBytes.toFloat() / 1.0737418E9f
+    val remainingGb = pkg.remainingBytes?.toFloat()?.div(1.0737418E9f)
 
-
-    CelvoUsageGauge(
-        usedAmount = usedGb.toFloat(),
-        totalAmount = totalGb.toFloat(),
-        unit = "GB",
-        modifier = Modifier
-            .fillMaxWidth(),
-        flagUrl = pkg.flagUrl,
-        primaryColor = MaterialTheme.colorScheme.primary,
-
+    if (remainingGb != null) {
+        CelvoUsageGauge(
+            usedAmount = remainingGb,
+            totalAmount = initialGb,
+            unit = "GB",
+            flagUrl = pkg.flagUrl,
+            modifier = Modifier.fillMaxWidth(),
+            primaryColor = MaterialTheme.colorScheme.primary,
         )
+    } else {
+        // Nullable remainingBytes → sync failed, show indeterminate gauge
+        CelvoUsageGauge(
+            usedAmount = 0f,
+            totalAmount = initialGb,
+            unit = "GB",
+            flagUrl = pkg.flagUrl,
+            modifier = Modifier.fillMaxWidth(),
+            primaryColor = MaterialTheme.colorScheme.surfaceVariant,
+        )
+    }
+}
 
+@Composable
+private fun PackageGaugeShimmer(
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .height(140.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(32.dp),
+                color = MaterialTheme.colorScheme.primary,
+                strokeWidth = 3.dp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = stringResource(Res.string.packages_loading),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun PackageGaugeError(
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .height(140.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = Icons.Outlined.Info,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(Res.string.packages_load_failed),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(onClick = onRetry) {
+                Text(text = stringResource(Res.string.action_retry))
+            }
+        }
+    }
 }
 
 
@@ -609,30 +721,35 @@ private fun EsimActionButtons(
     ) {
 
         if (isInstalled) {
-            ActionChip(
-                label = stringResource(Res.string.add_data),
-                icon = painterResource(CoreRes.drawable.ic_top_up),
+
+            CelvoChipButton(
+                iconRes = CoreRes.drawable.ic_top_up,
+                text = stringResource(Res.string.add_data),
                 onClick = onTopUpClick,
-                modifier = modifier.weight(1f)
+                modifier = Modifier.weight(1f)
             )
+
         } else {
-            ActionChip(
-                label = stringResource(Res.string.install),
-                icon = painterResource(CoreRes.drawable.ic_download),
+
+            CelvoChipButton(
+                iconRes = CoreRes.drawable.ic_download,
+                text = stringResource(Res.string.install),
                 onClick = onInstallClick,
-                modifier = modifier.weight(1f)
+                modifier = Modifier.weight(1f)
             )
+
         }
 
         Spacer(modifier = Modifier.width(10.dp))
 
 
-        ActionChip(
-            label = stringResource(Res.string.my_plans),
-            icon = painterResource(CoreRes.drawable.ic_rounded_arrow_left),
+        CelvoChipButton(
+            iconRes = CoreRes.drawable.ic_rounded_arrow_left,
+            text = stringResource(Res.string.my_plans),
             onClick = onDetailsClick,
-            modifier = modifier.weight(1f)
+            modifier = Modifier.weight(1f)
         )
+
 
         Spacer(modifier = Modifier.width(8.dp))
 
@@ -640,30 +757,10 @@ private fun EsimActionButtons(
         CelvoCircleButton(
             icon = painterResource(CoreRes.drawable.ic_rounded_question_mark),
             onClick = onSupportClick,
-            contentColor = Color.Unspecified,
+            contentColor = Color.Unspecified
 
-            )
+        )
     }
-}
-
-
-@Composable
-private fun ActionChip(
-    label: String,
-    icon: Painter,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    CelvoButton(
-        onClick = onClick,
-        modifier = modifier
-            .height(44.dp),
-        text = label,
-        trailingIcon = icon,
-        arrangement = Arrangement.SpaceBetween
-    )
-
-
 }
 
 
@@ -738,7 +835,7 @@ private fun EsimSwitcherSheet(
                         Icon(
                             imageVector = Icons.Outlined.CheckCircle,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = MaterialTheme.colorScheme.extended.success,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -811,26 +908,3 @@ private fun SectionHeader(
     }
 }
 
-@Composable
-private fun ErrorContent(
-    message: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.padding(horizontal = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = message,
-            color = MaterialTheme.colorScheme.error,
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyMedium
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Button(onClick = onRetry) {
-            Text(stringResource(Res.string.action_retry))
-        }
-    }
-}

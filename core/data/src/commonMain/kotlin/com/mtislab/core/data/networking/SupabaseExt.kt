@@ -4,6 +4,7 @@ import com.mtislab.core.domain.utils.DataError
 import com.mtislab.core.domain.utils.Resource
 import io.github.jan.supabase.exceptions.RestException
 import io.ktor.client.plugins.HttpRequestTimeoutException
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.ensureActive
 import kotlin.coroutines.coroutineContext
 
@@ -26,6 +27,9 @@ suspend fun <T> safeSupabaseCall(
         }
         Resource.Failure(error)
     } catch (e: HttpRequestTimeoutException) { // Ktor-ის Timeout
+        Resource.Failure(DataError.Remote.REQUEST_TIMEOUT)
+    } catch (e: TimeoutCancellationException) {
+        // OAuth web flow: user didn't complete auth in time
         Resource.Failure(DataError.Remote.REQUEST_TIMEOUT)
     } catch (e: Exception) {
         coroutineContext.ensureActive()

@@ -12,6 +12,7 @@ import com.mtislab.celvo.feature.store.domain.model.PromoValidationRequest
 import com.mtislab.celvo.feature.store.domain.model.WalletPaymentRequest
 import com.mtislab.celvo.feature.store.domain.model.WalletPaymentStatus
 import com.mtislab.celvo.feature.store.domain.model.WalletType
+import com.mtislab.celvo.feature.store.domain.repository.PromoClaimRepository
 import com.mtislab.celvo.feature.store.domain.repository.StoreRepository
 import com.mtislab.core.data.session.SessionManager
 import com.mtislab.core.domain.auth.AuthState
@@ -19,6 +20,7 @@ import com.mtislab.core.domain.auth.GoogleAuthProvider
 import com.mtislab.core.domain.model.AuthData
 import com.mtislab.core.domain.model.Route
 import com.mtislab.core.domain.payment.NativePayManager
+import com.mtislab.core.domain.payment.PendingPaymentStore
 import com.mtislab.core.domain.repository.AuthRepository
 import com.mtislab.core.domain.utils.DataError
 import com.mtislab.core.domain.utils.Resource
@@ -36,7 +38,8 @@ class CheckoutViewModel(
     private val storeRepository: StoreRepository,
     private val sessionManager: SessionManager,
     private val authRepository: AuthRepository,
-    private val nativePayManager: NativePayManager // NEW: injected via Koin
+    private val nativePayManager: NativePayManager,
+    private val promoClaimRepository: PromoClaimRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CheckoutState())
@@ -50,7 +53,8 @@ class CheckoutViewModel(
     init {
         loadPackage(routeArgs.packageId)
         observeSession()
-        checkWalletAvailability() // NEW
+        checkWalletAvailability()
+        autoApplyClaimedPromo()
     }
 
     // -------------------------------------------------------------------------
@@ -120,6 +124,7 @@ class CheckoutViewModel(
             is CheckoutAction.DismissLoginSheet -> {
                 _state.update { it.copy(showLoginSheet = false) }
             }
+
             is CheckoutAction.LoginWithGoogle -> loginWithGoogle(action.provider)
             is CheckoutAction.LoginWithApple -> loginWithApple()
 
@@ -129,6 +134,7 @@ class CheckoutViewModel(
                     it.copy(promo = it.promo.copy(showSheet = true, errorMessage = null))
                 }
             }
+
             is CheckoutAction.DismissPromoSheet -> {
                 _state.update {
                     it.copy(
@@ -140,6 +146,7 @@ class CheckoutViewModel(
                     )
                 }
             }
+
             is CheckoutAction.PromoCodeChanged -> {
                 _state.update {
                     it.copy(
@@ -147,9 +154,12 @@ class CheckoutViewModel(
                     )
                 }
             }
+
             is CheckoutAction.ApplyPromoCode -> validatePromoCode()
             is CheckoutAction.ClearPromoCode -> {
                 _state.update { it.copy(promo = PromoState()) }
+                // Prevent re-auto-apply on next Checkout visit
+                viewModelScope.launch { promoClaimRepository.clearAll() }
             }
         }
     }
@@ -213,6 +223,9 @@ class CheckoutViewModel(
                 is Resource.Success -> {
                     val payment = result.data
                     _state.update { it.copy(isLoading = false) }
+
+                    // Cache orderId for deep link fallback
+                    PendingPaymentStore.storeOrderId(payment.orderId)
 
                     when (payment.status) {
                         WalletPaymentStatus.COMPLETED -> {
@@ -281,8 +294,13 @@ class CheckoutViewModel(
 
             when (result) {
                 is Resource.Success -> {
+                    // Cache orderId for deep link fallback.
+                    // Currently the backend only returns redirectUrl. When orderId
+                    // is added to InitiateResponse, this will automatically work.
+                    result.data.orderId?.let { PendingPaymentStore.storeOrderId(it) }
                     _events.send(CheckoutEvent.OpenWebUrl(result.data.redirectUrl))
                 }
+
                 is Resource.Failure -> {
                     val errorMessage = result.error.toString()
                     _state.update { it.copy(error = errorMessage) }
@@ -351,6 +369,7 @@ class CheckoutViewModel(
                         }
                     }
                 }
+
                 is Resource.Failure -> {
                     val message = when (result.error) {
                         DataError.Remote.NO_INTERNET -> "ინტერნეტ კავშირი არ არის"
@@ -375,7 +394,12 @@ class CheckoutViewModel(
             _state.update { it.copy(isLoading = true, error = null) }
             if (provider != null) {
                 when (val tokenResult = provider.getGoogleIdToken()) {
-                    is Resource.Success -> handleAuthResult(authRepository.signInWithGoogle(tokenResult.data))
+                    is Resource.Success -> handleAuthResult(
+                        authRepository.signInWithGoogle(
+                            tokenResult.data
+                        )
+                    )
+
                     is Resource.Failure -> _state.update {
                         it.copy(isLoading = false, error = tokenResult.error.toString())
                     }
@@ -402,6 +426,7 @@ class CheckoutViewModel(
                     userId = result.data.userId
                 )
             }
+
             is Resource.Failure -> {
                 _state.update { it.copy(isLoading = false, error = result.error.toString()) }
                 _events.send(CheckoutEvent.ShowError("ავტორიზაცია ვერ მოხერხდა: ${result.error}"))
@@ -422,4 +447,45 @@ class CheckoutViewModel(
             }
         }
     }
+
+
+    private fun autoApplyClaimedPromo() {
+        viewModelScope.launch {
+            val claimedCode = promoClaimRepository.getActivePromoCode() ?: return@launch
+
+            // Pre-fill the code in the promo state
+            _state.update {
+                it.copy(
+                    promo = it.promo.copy(
+                        code = claimedCode,
+                        errorMessage = null,
+                    )
+                )
+            }
+
+            // Wait for package to be loaded before validating.
+            // The package loads in a parallel coroutine; we poll briefly.
+            awaitPackageLoaded()
+
+            // Now trigger the same validatePromoCode() that the manual flow uses.
+            // This reuses 100% of the existing validation logic.
+            validatePromoCode()
+        }
+    }
+
+    /**
+     * Simple poll that suspends until [CheckoutState.packageDetails] is non-null.
+     * Avoids a complex Flow combination by leveraging the fact that package
+     * loading is fast (~100-200ms) and always succeeds if the ID is valid.
+     */
+    private suspend fun awaitPackageLoaded() {
+        // Max 50 iterations × 100ms = 5s timeout (defensive guard)
+        var attempts = 0
+        while (_state.value.packageDetails == null && attempts < 50) {
+            kotlinx.coroutines.delay(100)
+            attempts++
+        }
+    }
+
+
 }

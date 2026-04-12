@@ -50,7 +50,7 @@ fun CelvoRegionItem(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(1f), // Square card
+            .aspectRatio(1f),
         contentPadding = PaddingValues(0.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {

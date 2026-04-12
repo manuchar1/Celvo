@@ -2,7 +2,6 @@ package com.mtislab.celvo.feature.myesim.presentation.list
 
 import CelvoPlaceholder
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -52,14 +51,16 @@ import celvo.feature.myesim.generated.resources.ic_arrow_right
 import celvo.feature.myesim.generated.resources.ic_network_broadcast
 import celvo.feature.myesim.generated.resources.mascot_no_e_sim_added
 import coil3.compose.AsyncImage
+import com.celvo.core.designsystem.resources.ic_rounded_arrow_left
 import com.celvo.core.designsystem.resources.ic_sim_card
+import com.celvo.core.designsystem.resources.ic_top_up
 import com.mtislab.celvo.feature.myesim.domain.model.EsimStatus
 import com.mtislab.celvo.feature.myesim.domain.model.UserEsim
 import com.mtislab.core.designsystem.components.buttons.CelvoButton
+import com.mtislab.core.designsystem.components.buttons.CelvoChipButton
 import com.mtislab.core.designsystem.components.buttons.CelvoCircleButton
 import com.mtislab.core.designsystem.components.cards.CelvoCard
 import com.mtislab.core.designsystem.theme.CelvoDark900
-import com.mtislab.core.designsystem.theme.CelvoGreen300
 import com.mtislab.core.designsystem.theme.CelvoGreen500
 import com.mtislab.core.designsystem.theme.CelvoGreen500Alpha15
 import com.mtislab.core.designsystem.theme.CelvoPurple300
@@ -68,6 +69,7 @@ import com.mtislab.core.designsystem.theme.CelvoRose500Alpha15
 import com.mtislab.core.designsystem.theme.PlusJakartaSans
 import com.mtislab.core.designsystem.theme.extended
 import com.mtislab.core.presentation.util.ObserveAsEvents
+import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 import com.celvo.core.designsystem.resources.Res as CoreRes
@@ -290,24 +292,26 @@ private fun EsimCard(
                 modifier = Modifier.weight(1f)
             ) {
 
-                CelvoCircleButton(icon = painterResource(CoreRes.drawable.ic_sim_card), onClick = {})
+                CelvoCircleButton(
+                    icon = painterResource(CoreRes.drawable.ic_sim_card),
+                    onClick = {})
 
                 Column {
                     Text(
-                        text = "Esim #${esim.iccid.takeLast(4)}",
+                        text = "${esim.userLabel}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.textPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
 
-              /*      Text(
-                        text = "${esim.status}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.success,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )*/
+                    /*      Text(
+                              text = "${esim.status}",
+                              style = MaterialTheme.typography.bodySmall,
+                              color = colors.success,
+                              maxLines = 1,
+                              overflow = TextOverflow.Ellipsis
+                          )*/
                 }
 
 
@@ -354,27 +358,24 @@ private fun EsimCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Top-Up ღილაკი მხოლოდ მაშინ თუ გვინდა გამოჩნდეს.
-                // თუ დიზაინში ორივე გინდა, შეგიძლია TopUpActionButton-იც დაამატო, როგორც ადრე გქონდა.
-                // აქ ორივე მოთავსებულია Row-ში:
-                TopUpActionButton(
+
+                CelvoChipButton(
+                    iconRes = CoreRes.drawable.ic_top_up,
                     text = "პაკეტები",
                     onClick = onTopUpClick,
                     modifier = Modifier.weight(1f)
                 )
 
-                DetailsActionButton(
+                CelvoChipButton(
+                    iconRes = CoreRes.drawable.ic_rounded_arrow_left,
                     text = "დეტალები",
-                    onClick = onDetailsClick,
-                    modifier = Modifier.weight(1f),
+                    onClick = onTopUpClick,
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
     }
 }
-
-
-
 
 
 @Composable
@@ -390,7 +391,7 @@ private fun StatusBadge(
             CelvoGreen500Alpha15
         )
 
-        EsimStatus.RELEASED, EsimStatus.DOWNLOADED  -> Pair(
+        EsimStatus.RELEASED, EsimStatus.DOWNLOADED -> Pair(
             color.textLink,
             CelvoPurple500Alpha15
         )
@@ -421,7 +422,7 @@ private fun StatusBadge(
 
 @Composable
 private fun EsimInfoRow(
-    icon: org.jetbrains.compose.resources.DrawableResource,
+    icon: DrawableResource,
     label: String,
     value: String,
     valueColor: Color = MaterialTheme.colorScheme.extended.textSecondary,
@@ -460,111 +461,8 @@ private fun EsimInfoRow(
     }
 }
 
-@Composable
-private fun TopUpActionButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val backgroundColor = MaterialTheme.colorScheme.extended.cardBackground
-    val contentColor = MaterialTheme.colorScheme.extended.textPrimary
 
-    CelvoCard(
-        onClick = onClick,
-        modifier = modifier.height(48.dp),
-        shape = CircleShape,
-        containerColor = backgroundColor,
-        border = null,
-        contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = text,
-                modifier = Modifier.padding(start = 14.dp),
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 14.sp // ოდნავ პატარა ფონტი ორ ღილაკზე დასატევად
-                ),
-                color = contentColor
-            )
 
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Box(
-                modifier = Modifier
-                    .padding(end = 6.dp)
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(CelvoGreen300),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_add),
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = CelvoDark900
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DetailsActionButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val backgroundColor = MaterialTheme.colorScheme.extended.cardBackground
-    val contentColor = MaterialTheme.colorScheme.extended.textPrimary
-
-    CelvoCard(
-        onClick = onClick,
-        modifier = modifier.height(48.dp),
-        shape = CircleShape,
-        containerColor = backgroundColor,
-        border = null,
-        contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = text,
-                modifier = Modifier.padding(start = 14.dp),
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 14.sp // ოდნავ პატარა ფონტი ორ ღილაკზე დასატევად
-                ),
-                color = contentColor
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Box(
-                modifier = Modifier
-                    .padding(end = 6.dp)
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(CelvoPurple300),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_arrow_right),
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = CelvoDark900
-                )
-            }
-        }
-    }
-}
 
 
 
@@ -597,7 +495,7 @@ private fun EsimCountryFlags(
                     contentDescription = country.isoCode,
                     modifier = Modifier
                         .fillMaxSize()
-                        //.clip(CircleShape)
+                    //.clip(CircleShape)
                     ,
                     contentScale = ContentScale.Crop
 

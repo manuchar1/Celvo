@@ -26,9 +26,19 @@ fun BundleDto.toDomain(): EsimBundle {
         remainingBytes = this.remainingBytes,
         usedBytes = this.usedBytes,
         usagePercent = this.usagePercent,
-        remainingDays = this.remainingDays,
+        initialFormatted = this.initialFormatted,
+        remainingFormatted = this.remainingFormatted,
+        usedFormatted = this.usedFormatted,
+        isUnlimited = this.isUnlimited,
+        startTime = this.startTime,
         endTime = this.endTime,
-        unlimited = this.unlimited
+        remainingDays = this.remainingDays,
+        duration = this.duration,
+        expiryDate = this.expiryDate,
+        assignmentId = this.assignmentId,
+        countryCode = this.countryCode,
+        countryName = this.countryName,
+        flagUrl = this.flagUrl
     )
 }
 
@@ -52,6 +62,18 @@ fun BundleDto.toPackageInfoCardData(): PackageInfoCardData =
             PackageInfoCardData.BadgeType.Country
         },
         region = "region",
+        primaryOperator = operators.firstOrNull()?.name.orEmpty().ifEmpty { "Network" },
+        additionalOperatorCount = (operators.size - 1).coerceAtLeast(0),
+    )
+
+fun EsimBundle.toPackageInfoCardData(): PackageInfoCardData =
+    PackageInfoCardData(
+        dataAmountDisplay = displayName,
+        validityDisplay = "15",
+        countryName = countryName,
+        isoCode = countryCode,
+        badgeType = PackageInfoCardData.BadgeType.Country,
+        region = "",
         primaryOperator = operators.firstOrNull()?.name.orEmpty().ifEmpty { "Network" },
         additionalOperatorCount = (operators.size - 1).coerceAtLeast(0),
     )

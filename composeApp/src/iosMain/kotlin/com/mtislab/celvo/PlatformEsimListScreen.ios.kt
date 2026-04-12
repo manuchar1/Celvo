@@ -20,6 +20,6 @@ actual fun PlatformEsimListScreen(
     MyEsimListRoot(
         onEsimClick = onEsimClick,
         onAddEsimClick = onAddEsimClick,
-        onResolutionRequired = null
+        onTopUpClick = {},
     )
 }

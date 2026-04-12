@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CTCellularPlanProvisioningUsageDescription</key>
-	<string>Celvo needs to access cellular plan provisioning to install your eSIM</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleURLTypes</key>
@@ -16,8 +14,11 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>com.mtislab.celvo</string>
+                <string>com.googleusercontent.apps.952537737642-k366s3knk0al2gbnk573ri64rotjbtdv</string>
 			</array>
 		</dict>
 	</array>
+	<key>CTCellularPlanProvisioningUsageDescription</key>
+	<string>Celvo needs to access cellular plan provisioning to install your eSIM</string>
 </dict>
 </plist>

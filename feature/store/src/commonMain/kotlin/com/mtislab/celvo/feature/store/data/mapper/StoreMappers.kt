@@ -5,6 +5,7 @@ import com.mtislab.celvo.feature.store.data.dto.CountriesResponseDto
 import com.mtislab.celvo.feature.store.data.dto.DestinationDto
 import com.mtislab.celvo.feature.store.data.dto.MarketingBannerDto
 import com.mtislab.celvo.feature.store.data.dto.RegionsResponseDto
+import com.mtislab.celvo.feature.store.domain.model.BannerPlacement
 import com.mtislab.celvo.feature.store.domain.model.BannerType
 import com.mtislab.celvo.feature.store.domain.model.MarketingBanner
 import com.mtislab.celvo.feature.store.domain.model.StoreCountriesData
@@ -43,28 +44,37 @@ fun DestinationDto.toDomain(): StoreItem {
 }
 
 
+
+
+/**
+ * Maps the flat Supabase DTO (matching `marketing_banners` table) to the domain model.
+ *
+ * NOTE: [MarketingBanner.isClaimed] is always `false` from this mapper.
+ * The ViewModel merges the claimed state from [PromoClaimRepository].
+ */
 fun MarketingBannerDto.toDomain(): MarketingBanner {
     return MarketingBanner(
         id = id,
-        title = title ?: "",
-        description = description ?: "",
-        imageUrl = imageUrl ?: "",
-        ctaText = "ნახე მეტი",
-        deepLink = targetUrl ?: "",
-
-        backgroundColor = Color(0xFFF3F0FF), // CelvoPurpleTint ექვივალენტი
-        textColor = Color(0xFF0A0B0C),       // CelvoDark900 ექვივალენტი
-
+        title = title.orEmpty(),
+        description = description.orEmpty(),
+        imageUrl = imageUrl.orEmpty(),
+        ctaText = ctaText ?: "გაიგე მეტი",
+        deepLink = ctaLink.orEmpty(),
+        backgroundColor = parseColor(backgroundColor) ?: Color(0xFFF3F0FF),
+        textColor = parseColor(textColor) ?: Color.Black,
         type = when (type?.uppercase()) {
             "HERO" -> BannerType.HERO
             "SECONDARY" -> BannerType.SECONDARY
             else -> BannerType.UNKNOWN
         },
-
-        // ახალი ველები Promo Engine-სთვის
-        promoCode = promoCode,
-        claimedTitle = claimedTitle,
-        claimedDescription = claimedDescription
+        placement = when (placement?.uppercase()) {
+            "POST_PURCHASE" -> BannerPlacement.POST_PURCHASE
+            else -> BannerPlacement.STORE
+        },
+        promoCode = promoCode?.takeIf { it.isNotBlank() },
+        claimedTitle = claimedTitle?.takeIf { it.isNotBlank() },
+        claimedDescription = claimedDescription?.takeIf { it.isNotBlank() },
+        isClaimed = false, // Always false from API — merged by ViewModel
     )
 }
 
@@ -72,17 +82,17 @@ fun MarketingBannerDto.toDomain(): MarketingBanner {
  * Parses a Hex string (e.g., "#F3F0FF" or "#FF0000") into a Compose Color.
  * Handles potential parsing errors gracefully.
  */
-private fun parseColor(hex: String): Color? {
+private fun parseColor(hex: String?): Color? {
+    if (hex.isNullOrBlank()) return null
     return try {
         val cleanHex = hex.removePrefix("#")
-        val colorInt = if (cleanHex.length == 6) {
-            // Add full alpha (FF) if missing
+        val colorLong = if (cleanHex.length == 6) {
             "FF$cleanHex".toLong(16)
         } else {
             cleanHex.toLong(16)
         }
-        Color(colorInt)
-    } catch (e: Exception) {
+        Color(colorLong)
+    } catch (_: Exception) {
         null
     }
 }

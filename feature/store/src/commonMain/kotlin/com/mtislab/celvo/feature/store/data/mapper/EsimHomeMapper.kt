@@ -29,7 +29,7 @@ fun EsimHomeItemDto.toDomain(): UserEsim {
         displayName = displayName,
         profileStatus = profileStatus.toProfileStatus(),
         profileStatusDisplay = profileStatusDisplay,
-        installed = installed,
+        installed = isInstalled,
         wasEverInstalled = wasEverInstalled,
         primaryCountryCode = primaryCountryCode,
         primaryFlagUrl = primaryFlagUrl,
@@ -39,7 +39,8 @@ fun EsimHomeItemDto.toDomain(): UserEsim {
         packages = packages.map { it.toDomain() },
         hasActivePackage = hasActivePackage,
         totalPackageCount = totalPackageCount,
-        dataLive = dataLive
+        packagesLoaded = packagesLoaded,
+        dataLive = isDataLive
     )
 }
 
@@ -62,8 +63,8 @@ fun EsimHomePackageDto.toDomain(): EsimHomePackage {
         countryCode = countryCode,
         countryName = countryName,
         flagUrl = flagUrl,
-        isActive = activePackage,
-        isUnlimited = unlimited
+        isActive = isActivePackage,
+        isUnlimited = isUnlimited
     )
 }
 

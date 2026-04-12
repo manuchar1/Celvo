@@ -27,7 +27,7 @@ class MainScreenViewModel(
             sessionManager.state.collect { authState ->
                 _state.update {
                     it.copy(
-                        isAuthLoading = false,                              // ✅ Auth state is now known
+                        isAuthLoading = false,
                         isLoggedIn = authState is AuthState.Authenticated
                     )
                 }

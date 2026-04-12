@@ -14,8 +14,8 @@ import androidx.compose.ui.unit.dp
 fun CelvoGlow(
     color: Color,
     modifier: Modifier = Modifier,
-    radius: Dp = 150.dp,
-    alpha: Float = 0.2f
+    radius: Dp = 160.dp,
+    alpha: Float = 0.9f
 ) {
     Box(
         modifier = modifier

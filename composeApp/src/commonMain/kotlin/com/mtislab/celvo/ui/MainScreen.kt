@@ -17,30 +17,62 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
+import androidx.savedstate.SavedState
+import androidx.savedstate.read
+import androidx.savedstate.write
 import com.mtislab.celvo.PlatformEsimListScreen
 import com.mtislab.celvo.feature.auth.presentation.register.RegisterRoot
 import com.mtislab.celvo.feature.myesim.presentation.details.EsimDetailsRoot
 import com.mtislab.celvo.feature.profile.presentation.ProfileRoot
 import com.mtislab.celvo.feature.profile.presentation.settings.LanguageScreen
 import com.mtislab.celvo.feature.profile.presentation.settings.ThemeScreen
-import com.mtislab.celvo.feature.store.presentation.store.StoreScreenRoot
 import com.mtislab.celvo.feature.store.presentation.checkout.CheckoutScreenRoot
-import com.mtislab.celvo.feature.store.presentation.checkout.PaymentResultScreen
 import com.mtislab.celvo.feature.store.presentation.packages.PackagesScreenRoot
+import com.mtislab.celvo.feature.store.presentation.verification.PaymentVerificationScreenRoot
 import com.mtislab.celvo.feature.store.presentation.search.SearchRoot
+import com.mtislab.core.designsystem.components.screens.OfflineInstructionsScreen
+import com.mtislab.celvo.feature.store.presentation.store.StoreScreenRoot
 import com.mtislab.celvo.navigation.bottomNavRoutes
 import com.mtislab.celvo.ui.components.CelvoBottomBar
 import com.mtislab.core.designsystem.theme.extended
 import com.mtislab.core.domain.model.Route
 import com.mtislab.core.domain.model.Route.SearchTab
+import com.mtislab.core.domain.payment.PendingPaymentStore
 import com.mtislab.core.domain.utils.DeepLinkHandler
 import org.koin.compose.viewmodel.koinViewModel
+import kotlin.reflect.typeOf
+
+
+val SearchTabType = object : NavType<Route.SearchTab>(isNullableAllowed = false) {
+
+    override fun get(bundle: SavedState, key: String): Route.SearchTab? {
+        // Use a read { } block to access the underlying SavedStateReader
+        val savedString = bundle.read { getString(key) }
+        return savedString.let { Route.SearchTab.valueOf(it) }
+    }
+
+    override fun parseValue(value: String): Route.SearchTab {
+        return Route.SearchTab.valueOf(value)
+    }
+
+    override fun put(bundle: SavedState, key: String, value: Route.SearchTab) {
+        // Use a write { } block to access the underlying SavedStateWriter
+        bundle.write {
+            putString(key, value.name)
+        }
+    }
+
+    override fun serializeAsValue(value: Route.SearchTab): String {
+        return value.name
+    }
+}
 
 @Composable
 fun MainScreenRoot(
@@ -64,22 +96,29 @@ fun MainScreenScreen(
 
     LaunchedEffect(Unit) {
         DeepLinkHandler.events.collect { url ->
-            if (url.contains("/payment/result") || url.contains("/payment/status")) {
-                val isSuccess = !url.contains("fail", ignoreCase = true) &&
-                        !url.contains("error", ignoreCase = true)
-                val orderId = url.substringAfter("order_id=", "").substringBefore("&")
-                navController.navigate(
-                    Route.PaymentResult(
-                        isSuccess = isSuccess,
-                        orderId = orderId.ifEmpty { null }
-                    )
-                ) {
-                    popUpTo(Route.Home)
+            if (url.contains("payment/result") || url.contains("payment/status")) {
+                // Extract order_id from query params:
+                // Expected format: com.mtislab.celvo://payment/result?order_id=UUID
+                val orderId = url.substringAfter("order_id=", "")
+                    .substringBefore("&")
+                    .takeIf { it.isNotEmpty() }
+
+                // Also try to extract from cached pending payment (fallback)
+                val resolvedOrderId = orderId ?: PendingPaymentStore.consumeOrderId()
+
+                if (resolvedOrderId != null) {
+                    // Clear to prevent replayed/duplicate deep links from re-triggering
+                    DeepLinkHandler.clearLastEmitted()
+                    navController.navigate(Route.PaymentVerification(orderId = resolvedOrderId)) {
+                        popUpTo(Route.Home)
+                    }
+                } else {
+                    // No order_id: likely a duplicate deep link (orderId already consumed).
+                    // Just ignore — the PaymentVerification screen is already showing.
+                    println("⚠️ Payment deep link without order_id (duplicate?): $url")
                 }
             }
         }
-
-
     }
 
 
@@ -165,6 +204,9 @@ fun MainScreenScreen(
                         },
                         onNavigateToSearch = { tab, focus ->
                             navController.navigate(Route.Search(initialTab = tab, focusSearch = focus))
+                        },
+                        onViewInstructionsClick = {
+                            navController.navigate(Route.OfflineInstructions)
                         }
                     )
                 }
@@ -198,26 +240,52 @@ fun MainScreenScreen(
                         type = args.type,
                         region = args.region,
                         onClose = { navController.popBackStack() },
-                        onNavigateToPaymentResult = { isSuccess, orderId ->}
-                    )
-                }
-
-                // ── Payment Result ─────────────────────────────────────────────────────
-                composable<Route.PaymentResult> { backStackEntry ->
-                    val args = backStackEntry.toRoute<Route.PaymentResult>()
-                    PaymentResultScreen(
-                        isSuccess = args.isSuccess,
-                        orderId = args.orderId,
-                        onHomeClick = {
-                            navController.navigate(Route.Home) {
-                                popUpTo(Route.Home) { inclusive = true }
+                        onNavigateToPaymentResult = { _, orderId ->
+                            if (orderId != null) {
+                                navController.navigate(Route.PaymentVerification(orderId = orderId)) {
+                                    popUpTo(Route.Home)
+                                }
                             }
                         }
                     )
                 }
 
+                // ── Payment Verification ─────────────────────────────────────────────
+                composable<Route.PaymentVerification> {
+                    PaymentVerificationScreenRoot(
+                        onNavigateToHome = {
+                            navController.navigate(Route.Home) {
+                                popUpTo(Route.Home) { inclusive = true }
+                            }
+                        },
+                        onNavigateToMyEsims = {
+                            navController.navigate(Route.MyEsim) {
+                                popUpTo(Route.Home)
+                            }
+                        },
+                        onLaunchEsimInstall = { /* Platform-specific eSIM install resolution */ }
+                    )
+                }
+
                 // ── Search ─────────────────────────────────────────────────────────────
-                composable<Route.Search> { backStackEntry ->
+     /*           composable<Route.Search> { backStackEntry ->
+                    val args = backStackEntry.toRoute<Route.Search>()
+                    SearchRoot(
+                        initialTab = args.initialTab,
+                        focusSearch = args.focusSearch,
+                        onBackClick = { navController.popBackStack() },
+                        onNavigateToDetails = { isoCode, countryName, type ->
+                            navController.navigate(Route.Packages(isoCode, countryName, type))
+                        }
+                    )
+                }*/
+
+
+                // ── Search ─────────────────────────────────────────────────────────────
+                composable<Route.Search>(
+                    // Add the typeMap here
+                    typeMap = mapOf(typeOf<Route.SearchTab>() to SearchTabType)
+                ) { backStackEntry ->
                     val args = backStackEntry.toRoute<Route.Search>()
                     SearchRoot(
                         initialTab = args.initialTab,
@@ -228,6 +296,7 @@ fun MainScreenScreen(
                         }
                     )
                 }
+
 
                 // ── My eSIM (auth-guarded) ─────────────────────────────────────────────
                 composable<Route.MyEsim> {
@@ -284,6 +353,13 @@ fun MainScreenScreen(
                 composable<Route.Language> {
                     LanguageScreen(onBackClick = { navController.popBackStack() })
                 }
+
+                // ── Offline Instructions ─────────────────────────────────────────────
+                composable<Route.OfflineInstructions> {
+                    OfflineInstructionsScreen(
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
             }
         }
     }
@@ -332,6 +408,14 @@ private fun AuthGuardedContent(
     }
 }
 
+
+
+
+
+
+
+
+
 @Composable
 private fun ScreenPlaceholder(text: String) {
     Box(
@@ -341,3 +425,9 @@ private fun ScreenPlaceholder(text: String) {
         Text(text = text, color = MaterialTheme.colorScheme.onBackground)
     }
 }
+
+
+
+
+
+

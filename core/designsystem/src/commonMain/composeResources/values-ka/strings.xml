@@ -15,4 +15,21 @@
     <string name="section_all_countries">ყველა ქვეყანა</string>
     <string name="section_regional_plans">რეგიონალური პაკეტები</string>
     <string name="action_retry">სცადეთ თავიდან</string>
+
+    <string name="no_internet_title">კავშირი ვერ მოიძებნა</string>
+    <string name="no_internet_message">შეამოწმეთ თქვენი ინტერნეტკავშირი და სცადეთ ხელახლა.</string>
+    <string name="no_internet_retry">განახლება</string>
+    <string name="no_internet_view_instructions">ინსტრუქციის ნახვა</string>
+
+    <string name="offline_instructions_title">ინსტრუქცია</string>
+    <string name="offline_instructions_step1_title">ნაბიჯი 1: შეიძინეთ eSIM</string>
+    <string name="offline_instructions_step1_body">აირჩიეთ მონაცემთა პაკეტი თქვენი დანიშნულების ქვეყნისთვის. გადახდის დადასტურების შემდეგ, თქვენი eSIM პროფილი ავტომატურად მომზადდება და მზად იქნება დასაყენებლად.</string>
+    <string name="offline_instructions_step2_title">ნაბიჯი 2: დააყენეთ eSIM</string>
+    <string name="offline_instructions_step2_body">გახსენით თქვენი eSIM-ის დეტალები და დააჭირეთ "დაყენებას". თქვენი მოწყობილობა ავტომატურად ჩამოტვირთავს eSIM პროფილს. დარწმუნდით, რომ დაყენების დროს ინტერნეტთან ხართ დაკავშირებული.</string>
+    <string name="offline_instructions_step3_title">ნაბიჯი 3: გააქტიურეთ მგზავრობამდე</string>
+    <string name="offline_instructions_step3_body">გადადით პარამეტრები → მობილური ინტერნეტი და ჩართეთ ახალი eSIM ხაზი. გირჩევთ, eSIM გამგზავრებამდე გააქტიუროთ, რათა ჩასვლისას ყველაფერი მზად იყოს.</string>
+    <string name="offline_instructions_step4_title">ნაბიჯი 4: ჩართეთ მონაცემთა როუმინგი</string>
+    <string name="offline_instructions_step4_body">დანიშნულების ადგილას ჩასვლისას, ჩართეთ მონაცემთა როუმინგი eSIM ხაზისთვის მოწყობილობის პარამეტრებში. თქვენი მონაცემთა პაკეტი ავტომატურად ამოქმედდება.</string>
+    <string name="offline_instructions_note_title">მნიშვნელოვანი</string>
+    <string name="offline_instructions_note_body">თქვენი მოწყობილობა უნდა იყოს eSIM ტექნოლოგიის მხარდამჭერი. 2018 წლის შემდეგ გამოშვებული თანამედროვე სმარტფონების უმეტესობა მხარს უჭერს eSIM-ს. პრობლემის შემთხვევაში, გთხოვთ დაგვიკავშირდეთ.</string>
 </resources>

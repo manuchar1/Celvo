@@ -14,20 +14,34 @@ internal fun Project.configureKotlinMultiplatform() {
     configureAndroidTarget()
 
     extensions.configure<KotlinMultiplatformExtension> {
-        listOf(
-            iosX64(),
-            iosArm64(),
-            iosSimulatorArm64()
-        ).forEach { iosTarget ->
-            iosTarget.binaries.framework {
-                baseName = this@configureKotlinMultiplatform.pathToFrameworkName()
-            }
-        }
+        // Register iOS targets (always needed for all KMP library modules)
+        iosX64()
+        iosArm64()
+        iosSimulatorArm64()
 
         compilerOptions {
             freeCompilerArgs.add("-Xexpect-actual-classes")
             freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
             freeCompilerArgs.add("-opt-in=kotlin.time.ExperimentalTime")
+        }
+    }
+
+    // Configure framework binaries AFTER all plugins are applied.
+    // If the CocoaPods plugin is present, it manages its own framework binaries,
+    // so we skip manual framework configuration to avoid conflicts.
+    afterEvaluate {
+        if (!pluginManager.hasPlugin("org.jetbrains.kotlin.native.cocoapods")) {
+            extensions.configure<KotlinMultiplatformExtension> {
+                listOf(
+                    iosX64(),
+                    iosArm64(),
+                    iosSimulatorArm64()
+                ).forEach { iosTarget ->
+                    iosTarget.binaries.framework {
+                        baseName = this@afterEvaluate.pathToFrameworkName()
+                    }
+                }
+            }
         }
     }
 }
