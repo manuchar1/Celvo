@@ -15,6 +15,7 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.core.splashscreen)
             implementation(libs.koin.android)
             implementation(projects.feature.auth.presentation)
 
@@ -51,6 +52,13 @@ kotlin {
             implementation(libs.koin.compose.viewmodel)
 
             implementation(libs.supabase.auth)
+
+            // Coil + an explicit Ktor engine so the singleton ImageLoader can
+            // load network images on iOS (see App.kt). coil.network.ktor pulls
+            // in the Ktor network fetcher; ktor.client.core provides HttpClient.
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor)
+            implementation(libs.ktor.client.core)
 
 
 

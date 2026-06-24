@@ -15,18 +15,24 @@ import kotlinx.coroutines.launch
 
 class SearchViewModel(
     private val repository: StoreRepository,
-    // ✅ არგუმენტებს ვიღებთ პირდაპირ კონსტრუქტორში Koin-ისგან
     initialTab: Route.SearchTab,
-    initialFocus: Boolean
+    initialFocus: Boolean,
+    private val filterIsoCodes: String = ""
 ) : ViewModel() {
 
     private val _query = MutableStateFlow("")
-    // ✅ ინიციალიზაცია ხდება გადმოწოდებული არგუმენტით
     private val _selectedTab = MutableStateFlow(initialTab)
     private val _shouldFocusSearch = MutableStateFlow(initialFocus)
 
     private val _allCountries = MutableStateFlow<List<StoreItem>>(emptyList())
     private val _allRegions = MutableStateFlow<List<StoreItem>>(emptyList())
+
+    /** When non-empty, only show countries matching these ISO codes (for eSIM top-up) */
+    private val isoCodeFilter: Set<String> = if (filterIsoCodes.isNotBlank()) {
+        filterIsoCodes.split(",").map { it.trim().uppercase() }.toSet()
+    } else {
+        emptySet()
+    }
 
     val state = combine(
         _query,
@@ -38,13 +44,19 @@ class SearchViewModel(
 
         val sourceList = if (tab == Route.SearchTab.COUNTRY) countries else regions
 
+        // Apply eSIM top-up ISO code filter if present
+        val preFiltered = if (isoCodeFilter.isNotEmpty() && tab == Route.SearchTab.COUNTRY) {
+            sourceList.filter { item -> item.id.uppercase() in isoCodeFilter }
+        } else {
+            sourceList
+        }
 
         val cleanQuery = query.trim()
 
         val filteredList = if (cleanQuery.isBlank()) {
-            sourceList
+            preFiltered
         } else {
-            sourceList.filter { item ->
+            preFiltered.filter { item ->
                 if (tab == Route.SearchTab.REGION) {
                     item.name.contains(cleanQuery, ignoreCase = true) ||
                             item.supportedCountries.any { subCountry ->

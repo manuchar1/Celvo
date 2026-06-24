@@ -1,7 +1,10 @@
 
 
+import celvo.feature.store.generated.resources.Res
+import celvo.feature.store.generated.resources.topup_other
 import com.mtislab.celvo.feature.store.domain.model.EsimPackage
 import com.mtislab.celvo.feature.store.domain.model.PromoValidationResult
+import com.mtislab.core.presentation.util.UiText
 
 data class CheckoutState(
     val packageDetails: EsimPackage? = null,
@@ -36,7 +39,7 @@ data class PromoState(
     val showSheet: Boolean = false,
     val code: String = "",
     val isValidating: Boolean = false,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
     val appliedResult: PromoValidationResult? = null
 ) {
     val appliedCodeDisplay: String?
@@ -51,14 +54,14 @@ enum class PaymentMethod {
 
 data class TopupOption(
     val id: String,
-    val label: String,
+    val label: UiText,
     val price: Double,
     val currency: String = "₾"
 )
 
 val TopupOptions = listOf(
-    TopupOption("1", "20 GB", 55.00),
-    TopupOption("2", "10 GB", 30.00),
-    TopupOption("3", "5 GB", 15.00),
-    TopupOption("4", "სხვა", 0.0)
+    TopupOption("1", UiText.DynamicString("20 GB"), 55.00),
+    TopupOption("2", UiText.DynamicString("10 GB"), 30.00),
+    TopupOption("3", UiText.DynamicString("5 GB"), 15.00),
+    TopupOption("4", UiText.Resource(Res.string.topup_other), 0.0)
 )

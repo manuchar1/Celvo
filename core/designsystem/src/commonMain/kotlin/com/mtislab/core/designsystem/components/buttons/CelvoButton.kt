@@ -1,5 +1,6 @@
 package com.mtislab.core.designsystem.components.buttons
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -34,6 +35,8 @@ fun CelvoButton(
     trailingIcon: Painter? = null,
     isLoading: Boolean = false,
     enabled: Boolean = true,
+    outlined: Boolean = false,
+    border: BorderStroke? = null,
     arrangement: Arrangement.Horizontal = Arrangement.Center,
     containerColor: Color = MaterialTheme.colorScheme.extended.cardBackground,
     contentColor: Color = MaterialTheme.colorScheme.extended.textPrimary
@@ -49,10 +52,12 @@ fun CelvoButton(
         modifier = modifier.height(46.dp),
         enabled = actualEnabled,
         shape = RoundedCornerShape(26.dp),
+        border = if (outlined) BorderStroke(1.dp, finalContentColor) else border,
+        elevation = if (outlined) null else ButtonDefaults.buttonElevation(),
         colors = ButtonDefaults.buttonColors(
-            containerColor = containerColor,
+            containerColor = if (outlined) Color.Transparent else containerColor,
             contentColor = contentColor,
-            disabledContainerColor = if (isLoading) containerColor else disabledContainerColor,
+            disabledContainerColor = if (outlined) Color.Transparent else if (isLoading) containerColor else disabledContainerColor,
             disabledContentColor = disabledContentColor
         ),
         contentPadding = PaddingValues(0.dp)

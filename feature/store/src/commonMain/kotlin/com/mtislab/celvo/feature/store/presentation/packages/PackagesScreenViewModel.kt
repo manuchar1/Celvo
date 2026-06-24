@@ -2,6 +2,8 @@ package com.mtislab.celvo.feature.store.presentation.packages
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import celvo.feature.store.generated.resources.Res
+import celvo.feature.store.generated.resources.packages_error_load_failed
 import com.mtislab.celvo.feature.store.domain.model.EsimPackage
 import com.mtislab.celvo.feature.store.domain.repository.StoreRepository
 import com.mtislab.core.domain.utils.Resource
@@ -11,6 +13,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 
 class PackagesScreenViewModel(
     private val repository: StoreRepository
@@ -70,8 +73,8 @@ class PackagesScreenViewModel(
                     }
                 }
                 is Resource.Failure -> {
-                    // სურვილის შემთხვევაში აქ შეგიძლია ერორის მესიჯი DataError-იდან ამოიღო
-                    _state.update { it.copy(isLoading = false, error = "შეცდომა მონაცემების მიღებისას") }
+                    val errorText = getString(Res.string.packages_error_load_failed)
+                    _state.update { it.copy(isLoading = false, error = errorText) }
                 }
             }
         }

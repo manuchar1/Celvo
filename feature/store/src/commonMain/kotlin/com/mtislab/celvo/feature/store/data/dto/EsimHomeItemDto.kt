@@ -60,5 +60,23 @@ data class EsimHomePackageDto(
     @SerialName("countryName") val countryName: String? = null,
     @SerialName("flagUrl") val flagUrl: String? = null,
     @SerialName("isActivePackage") val isActivePackage: Boolean = false,
-    @SerialName("isUnlimited") val isUnlimited: Boolean = false,
+    // Backend field name is `unlimited` (not `isUnlimited`) — mismatching the
+    // SerialName silently parses every bundle as metered, so the unlimited UI
+    // never fires.
+    @SerialName("unlimited") val isUnlimited: Boolean = false,
+
+    // Per-assignment backend model (Option C).
+    // `assignmentId` is the stable primary key across same-SKU stacks.
+    // `queuePosition`: 0 = active, 1..N = queued, null = terminal (hidden from Home).
+    @SerialName("assignmentId") val assignmentId: String? = null,
+    @SerialName("queuePosition") val queuePosition: Int? = null,
+
+    // Catalogue-sourced bundle metadata (backfilled by catalogue sync; safely
+    // absent on older payloads, so all defaults keep deserialisation stable).
+    @SerialName("description") val description: String? = null,
+    @SerialName("throttleSpeedKbps") val throttleSpeedKbps: Int? = null,
+    @SerialName("throttleAfterMb") val throttleAfterMb: Int? = null,
+    @SerialName("bundleGroups") val bundleGroups: List<String> = emptyList(),
+    @SerialName("networkTypes") val networkTypes: List<String> = emptyList(),
+    @SerialName("roamingCountries") val roamingCountries: List<String> = emptyList(),
 )

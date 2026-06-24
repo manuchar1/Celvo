@@ -16,9 +16,15 @@ interface AuthRepository {
      * Same pattern as [signInWithGoogle] — sends the token to Supabase
      * via the IDToken provider, no browser redirect needed.
      *
-     * TODO: Implement when native Apple Sign-In is ready.
+     * @param idToken JWT returned by Apple.
+     * @param nonce   RAW (un-hashed) nonce used for this sign-in session,
+     *                required by Supabase so it can verify the JWT's
+     *                hashed `nonce` claim was minted for this request.
      */
-    suspend fun signInWithAppleNative(idToken: String): Resource<AuthData, DataError.Remote>
+    suspend fun signInWithAppleNative(
+        idToken: String,
+        nonce: String,
+    ): Resource<AuthData, DataError.Remote>
 
     suspend fun signOut()
 }

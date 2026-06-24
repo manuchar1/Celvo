@@ -1,6 +1,7 @@
 package com.mtislab.celvo.feature.myesim.presentation.list
 
 import CelvoPlaceholder
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +52,20 @@ import celvo.feature.myesim.generated.resources.ic_add
 import celvo.feature.myesim.generated.resources.ic_arrow_right
 import celvo.feature.myesim.generated.resources.ic_network_broadcast
 import celvo.feature.myesim.generated.resources.mascot_no_e_sim_added
+import celvo.feature.myesim.generated.resources.myesim_add
+import celvo.feature.myesim.generated.resources.myesim_add_new
+import celvo.feature.myesim.generated.resources.myesim_details
+import celvo.feature.myesim.generated.resources.myesim_empty_message
+import celvo.feature.myesim.generated.resources.myesim_empty_title
+import celvo.feature.myesim.generated.resources.myesim_error_message
+import celvo.feature.myesim.generated.resources.myesim_error_title
+import celvo.feature.myesim.generated.resources.myesim_install
+import celvo.feature.myesim.generated.resources.myesim_install_failed
+import celvo.feature.myesim.generated.resources.myesim_install_not_ready
+import celvo.feature.myesim.generated.resources.myesim_packages
+import celvo.feature.myesim.generated.resources.myesim_purchased_packages
+import celvo.feature.myesim.generated.resources.myesim_retry
+import celvo.feature.myesim.generated.resources.myesim_title
 import coil3.compose.AsyncImage
 import com.celvo.core.designsystem.resources.ic_rounded_arrow_left
 import com.celvo.core.designsystem.resources.ic_sim_card
@@ -60,6 +76,10 @@ import com.mtislab.core.designsystem.components.buttons.CelvoButton
 import com.mtislab.core.designsystem.components.buttons.CelvoChipButton
 import com.mtislab.core.designsystem.components.buttons.CelvoCircleButton
 import com.mtislab.core.designsystem.components.cards.CelvoCard
+import com.mtislab.core.designsystem.components.placeholders.CelvoErrorState
+import com.mtislab.core.designsystem.components.notifications.CelvoNotificationData
+import com.mtislab.core.designsystem.components.notifications.CelvoNotificationType
+import com.mtislab.core.designsystem.components.notifications.LocalCelvoNotification
 import com.mtislab.core.designsystem.theme.CelvoDark900
 import com.mtislab.core.designsystem.theme.CelvoGreen500
 import com.mtislab.core.designsystem.theme.CelvoGreen500Alpha15
@@ -68,9 +88,10 @@ import com.mtislab.core.designsystem.theme.CelvoPurple500Alpha15
 import com.mtislab.core.designsystem.theme.CelvoRose500Alpha15
 import com.mtislab.core.designsystem.theme.PlusJakartaSans
 import com.mtislab.core.designsystem.theme.extended
-import com.mtislab.core.presentation.util.ObserveAsEvents
+import com.mtislab.core.designsystem.utils.getRegionIcon
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import com.celvo.core.designsystem.resources.Res as CoreRes
 
@@ -83,13 +104,41 @@ fun MyEsimListRoot(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val uriHandler = LocalUriHandler.current
+    val notificationState = LocalCelvoNotification.current
 
-    ObserveAsEvents(viewModel.uiEvent) { event ->
-        when (event) {
-            is MyEsimListUiEvent.OpenUrl -> {
-                try {
-                    uriHandler.openUri(event.url)
-                } catch (_: Exception) {
+    val installNotReadyMessage = stringResource(Res.string.myesim_install_not_ready)
+    val installFailedMessage = stringResource(Res.string.myesim_install_failed)
+
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is MyEsimListUiEvent.OpenUrl -> {
+                    try {
+                        uriHandler.openUri(event.url)
+                    } catch (_: Exception) {
+                        notificationState.show(
+                            CelvoNotificationData(
+                                message = installFailedMessage,
+                                type = CelvoNotificationType.Error,
+                            )
+                        )
+                    }
+                }
+                MyEsimListUiEvent.ShowInstallNotReady -> {
+                    notificationState.show(
+                        CelvoNotificationData(
+                            message = installNotReadyMessage,
+                            type = CelvoNotificationType.Warning,
+                        )
+                    )
+                }
+                MyEsimListUiEvent.ShowInstallFailed -> {
+                    notificationState.show(
+                        CelvoNotificationData(
+                            message = installFailedMessage,
+                            type = CelvoNotificationType.Error,
+                        )
+                    )
                 }
             }
         }
@@ -134,6 +183,7 @@ fun MyEsimListScreen(
 
         MyEsimHeader(
             onAddClick = { onAction(MyEsimListAction.AddEsimClick) },
+            showAddButton = !state.showError && !state.showEmptyState && !(state.isLoading && state.esims.isEmpty())
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -150,33 +200,22 @@ fun MyEsimListScreen(
                 }
             }
 
-            state.showError -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "შეცდომა მოხდა",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = colors.textPrimary
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        CelvoButton(
-                            text = "სცადე თავიდან",
-                            onClick = { onAction(MyEsimListAction.RetryClick) },
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
+            state.error != null -> {
+                CelvoErrorState(
+                    error = state.error,
+                    onRetry = { onAction(MyEsimListAction.RetryClick) },
+                    serverErrorTitle = stringResource(Res.string.myesim_error_title),
+                    serverErrorMessage = stringResource(Res.string.myesim_error_message),
+                    serverErrorActionLabel = stringResource(Res.string.myesim_retry)
+                )
             }
 
             state.showEmptyState -> {
                 CelvoPlaceholder(
                     icon = Res.drawable.mascot_no_e_sim_added,
-                    title = "აქ გამოჩნდება შეძენილი Esim",
-                    message = "დამატეთ და მართეთ რამდენიმე eSIM სხვადასხვა მოწყობილობაზე მარტივად.",
-                    actionLabel = "ახალი Esim",
+                    title = stringResource(Res.string.myesim_empty_title),
+                    message = stringResource(Res.string.myesim_empty_message),
+                    actionLabel = stringResource(Res.string.myesim_add_new),
                     onActionClick = { onAction(MyEsimListAction.AddEsimClick) }
                 )
             }
@@ -208,6 +247,7 @@ fun MyEsimListScreen(
 @Composable
 private fun MyEsimHeader(
     onAddClick: () -> Unit,
+    showAddButton: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -216,7 +256,7 @@ private fun MyEsimHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "ჩემი E-Sim",
+            text = stringResource(Res.string.myesim_title),
             style = MaterialTheme.typography.titleLarge.copy(
                 letterSpacing = (-0.5).sp,
                 lineHeight = 28.sp
@@ -226,9 +266,11 @@ private fun MyEsimHeader(
             overflow = TextOverflow.Ellipsis
         )
 
-        AddEsimButton(
-            onClick = onAddClick
-        )
+        if (showAddButton) {
+            AddEsimButton(
+                onClick = onAddClick
+            )
+        }
     }
 }
 
@@ -258,7 +300,7 @@ private fun AddEsimButton(
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "დამატება",
+            text = stringResource(Res.string.myesim_add),
             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
         )
     }
@@ -298,20 +340,12 @@ private fun EsimCard(
 
                 Column {
                     Text(
-                        text = "${esim.userLabel}",
+                        text = esim.userLabel,
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.textPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-
-                    /*      Text(
-                              text = "${esim.status}",
-                              style = MaterialTheme.typography.bodySmall,
-                              color = colors.success,
-                              maxLines = 1,
-                              overflow = TextOverflow.Ellipsis
-                          )*/
                 }
 
 
@@ -328,7 +362,7 @@ private fun EsimCard(
         ) {
             EsimInfoRow(
                 icon = Res.drawable.ic_network_broadcast,
-                label = "შეძენილი პაკეტები:",
+                label = stringResource(Res.string.myesim_purchased_packages),
                 value = esim.totalBundles.toString(),
                 valueColor = colors.textPrimary,
                 iconTint = colors.textSecondary
@@ -346,9 +380,9 @@ private fun EsimCard(
         // --- BUTTON LOGIC ---
         if (esim.primaryAction == "INSTALL") {
             CelvoButton(
-                text = "ინსტალაცია",
+                text = stringResource(Res.string.myesim_install),
                 onClick = onActivateClick,
-                enabled = !isInstalling,
+                isLoading = isInstalling,
                 containerColor = CelvoGreen500,
                 contentColor = CelvoDark900,
                 modifier = Modifier.fillMaxWidth()
@@ -361,15 +395,15 @@ private fun EsimCard(
 
                 CelvoChipButton(
                     iconRes = CoreRes.drawable.ic_top_up,
-                    text = "პაკეტები",
+                    text = stringResource(Res.string.myesim_packages),
                     onClick = onTopUpClick,
                     modifier = Modifier.weight(1f)
                 )
 
                 CelvoChipButton(
                     iconRes = CoreRes.drawable.ic_rounded_arrow_left,
-                    text = "დეტალები",
-                    onClick = onTopUpClick,
+                    text = stringResource(Res.string.myesim_details),
+                    onClick = onDetailsClick,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -462,10 +496,6 @@ private fun EsimInfoRow(
 }
 
 
-
-
-
-
 private const val MAX_VISIBLE_FLAGS = 4
 
 @Composable
@@ -487,19 +517,30 @@ private fun EsimCountryFlags(
         verticalAlignment = Alignment.CenterVertically
     ) {
         visibleFlags.forEach { country ->
-            FlagCircle {
-                AsyncImage(
-                    model = country.flagUrl.ifEmpty {
-                        "https://flagcdn.com/h120/${country.isoCode.lowercase()}.png"
-                    },
-                    contentDescription = country.isoCode,
-                    modifier = Modifier
-                        .fillMaxSize()
-                    //.clip(CircleShape)
-                    ,
-                    contentScale = ContentScale.Crop
+            val isRealCountryCode = country.isoCode.length == 2 &&
+                    country.isoCode.all { it.isLetter() }
+            val hasRemoteFlag = country.flagUrl.isNotEmpty()
 
-                )
+            FlagCircle {
+                if (hasRemoteFlag || isRealCountryCode) {
+                    // Country flag — use remote URL or build from ISO code
+                    AsyncImage(
+                        model = country.flagUrl.ifEmpty {
+                            "https://flagcdn.com/h120/${country.isoCode.lowercase()}.png"
+                        },
+                        contentDescription = country.isoCode,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    // Region — use local icon from getRegionIcon()
+                    Image(
+                        painter = painterResource(getRegionIcon(country.isoCode)),
+                        contentDescription = country.isoCode,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
             }
         }
 

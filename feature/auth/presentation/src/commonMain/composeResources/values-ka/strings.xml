@@ -3,6 +3,20 @@
     <string name="country_turkiye">თურქეთი</string>
     <string name="country_germany">გერმანია</string>
     <string name="country_georgia">საქართველო</string>
-    <string name="countries_500_plus">500+ ქვეყანა</string>
+    <string name="countries_500_plus">200+ ქვეყანა</string>
 
+    <!-- Onboarding pager -->
+    <string name="onboarding_page1_title">უსაზღვრო კავშირი\nნებისმიერ ქვეყანაში</string>
+    <string name="onboarding_page1_subtitle">აირჩიე ქვეყანა და გაააქტიურე eSIM\nრამდენიმე წამში.</string>
+    <string name="onboarding_page2_title">მარტივი ინსტალაცია\nQR კოდით</string>
+    <string name="onboarding_page2_subtitle">დაასკანერე და ჩაერთე ქსელში\nზედმეტი ძალისხმევის გარეშე.</string>
+    <string name="onboarding_page3_title">საუკეთესო ფასები\nროუმინგის გარეშე</string>
+    <string name="onboarding_page3_subtitle">დაზოგე თანხა და ისარგებლე\nადგილობრივი ტარიფებით.</string>
+
+    <!-- Sign-in CTAs -->
+    <string name="register_apple_sign_in">Apple-ით შესვლა</string>
+    <string name="register_google_sign_in">Google-ით შესვლა</string>
+
+    <!-- Auth errors -->
+    <string name="auth_error_title">ავტორიზაცია ვერ მოხერხდა</string>
 </resources>

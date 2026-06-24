@@ -14,4 +14,31 @@
     <string name="section_regional_plans">Regional plans</string>
     <string name="action_retry">Try again</string>
     <string name="action_see_all">See more</string>
+
+    <string name="profile_title">Profile</string>
+    <string name="profile_dark_mode">Dark Mode</string>
+    <string name="profile_log_out">Log Out</string>
+    <string name="profile_logout_confirmation">Are you sure you want to\nlog out?</string>
+    <string name="profile_logout_confirm">Yes, log out</string>
+    <string name="profile_logout_dismiss">Not now</string>
+    <string name="theme_on">On</string>
+    <string name="theme_off">Off</string>
+    <string name="theme_system_default">System Default</string>
+
+    <!-- Language settings -->
+    <string name="language_screen_title">Language</string>
+    <string name="language_name_english">English</string>
+    <string name="language_name_georgian">ქართული</string>
+
+    <!-- Delete Account -->
+    <string name="profile_delete_account_trigger">Delete Account</string>
+    <string name="profile_delete_account_dialog_title">Delete your account?</string>
+    <string name="profile_delete_account_dialog_warning">This action is permanent and cannot be undone.</string>
+    <string name="profile_delete_account_dialog_consequence">Please note: Once you delete your account, you will no longer have access to your eSim information, promos and points.</string>
+    <string name="profile_delete_account_dialog_cancel">Cancel</string>
+    <string name="profile_delete_account_dialog_confirm">Delete Account</string>
+    <string name="profile_delete_account_success">Your account has been deleted.</string>
+    <string name="profile_delete_account_error_generic">Couldn\'t delete your account. Please try again.</string>
+    <string name="profile_delete_account_error_session">Your session expired. Please log in again.</string>
+    <string name="profile_delete_account_error_partial">Your data was removed but the auth provider is temporarily unavailable. Please log out — our team will finish cleanup.</string>
 </resources>

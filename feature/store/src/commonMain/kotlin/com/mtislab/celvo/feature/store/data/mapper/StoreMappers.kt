@@ -31,7 +31,7 @@ fun DestinationDto.toDomain(): StoreItem {
         id = id,
         name = name,
         imageUrl = flagUrl,
-        formattedPrice = "$minPrice $",
+        formattedPrice = "$ $minPrice",
         type = if (type.equals("REGION", ignoreCase = true)) StoreItemType.REGION else StoreItemType.COUNTRY,
         supportedCountriesCount = count,
         supportedCountries = supportedCountries?.map { dto ->
@@ -48,9 +48,6 @@ fun DestinationDto.toDomain(): StoreItem {
 
 /**
  * Maps the flat Supabase DTO (matching `marketing_banners` table) to the domain model.
- *
- * NOTE: [MarketingBanner.isClaimed] is always `false` from this mapper.
- * The ViewModel merges the claimed state from [PromoClaimRepository].
  */
 fun MarketingBannerDto.toDomain(): MarketingBanner {
     return MarketingBanner(
@@ -58,7 +55,10 @@ fun MarketingBannerDto.toDomain(): MarketingBanner {
         title = title.orEmpty(),
         description = description.orEmpty(),
         imageUrl = imageUrl.orEmpty(),
-        ctaText = ctaText ?: "გაიგე მეტი",
+        // Empty when the API omits a CTA label — UI layer substitutes a
+        // localized default (banner_default_cta) at render time so the data
+        // layer doesn't need access to compose resources.
+        ctaText = ctaText.orEmpty(),
         deepLink = ctaLink.orEmpty(),
         backgroundColor = parseColor(backgroundColor) ?: Color(0xFFF3F0FF),
         textColor = parseColor(textColor) ?: Color.Black,
@@ -71,10 +71,6 @@ fun MarketingBannerDto.toDomain(): MarketingBanner {
             "POST_PURCHASE" -> BannerPlacement.POST_PURCHASE
             else -> BannerPlacement.STORE
         },
-        promoCode = promoCode?.takeIf { it.isNotBlank() },
-        claimedTitle = claimedTitle?.takeIf { it.isNotBlank() },
-        claimedDescription = claimedDescription?.takeIf { it.isNotBlank() },
-        isClaimed = false, // Always false from API — merged by ViewModel
     )
 }
 

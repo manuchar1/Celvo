@@ -2,18 +2,20 @@ package com.mtislab.core.designsystem.components.indicators
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,60 +23,61 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import com.mtislab.core.designsystem.theme.extended
 import kotlin.math.roundToInt
 
 /**
  * eSIM data usage gauge — segmented arc design.
  *
- * The arc is split into [segmentCount] discrete segments separated by small gaps.
- * Filled segments use [primaryColor]; unfilled segments use [trackColor].
+ * Two visual modes share the same shape so the home gauge keeps a single
+ * silhouette:
  *
- * @param usedAmount   Data consumed (e.g. 15).
- * @param totalAmount  Total data allowance (e.g. 20).
- * @param unit         Display unit label (e.g. "GB").
- * @param flagUrl      Country flag image URL (Coil 3).
- * @param segmentCount Number of arc segments (default 10).
- * @param gapAngleDeg  Angle in degrees of each gap between segments.
- * @param sweepAngleDeg Total arc sweep in degrees (centered at the top, gap at the bottom).
- * @param strokeWidth  Thickness of the arc stroke.
- * @param primaryColor Color for filled (active) segments.
- * @param trackColor   Color for unfilled (background) segments.
- * @param animationDuration Duration of the fill animation in milliseconds.
+ *  - **Metered**: animated fill 0..1, primary color, primary label is the
+ *    remaining-bytes string, secondary label is "/ total".
+ *  - **Unlimited** (`isUnlimited = true`): the arc is always full, painted
+ *    with a sweep gradient through `primary → secondary → primary`. The
+ *    primary label is rendered as a large `∞` glyph that pulses gently to
+ *    telegraph "never runs out". The secondary label reads "Unlimited".
+ *
+ * Both modes draw exclusively from `MaterialTheme.colorScheme.*` and the
+ * project's `extended` tokens — no hex literals, so light/dark Just Works.
+ *
+ * @param progress       Fill ratio 0f..1f. Ignored when [isUnlimited] is true.
+ * @param primaryText    Primary label inside the arc.
+ * @param secondaryText  Secondary label beneath the primary.
+ * @param isUnlimited    When true, switches to the unlimited treatment.
+ * @param flag           Optional flag composable rendered above the labels.
+ * @param bottomContent  Optional content below the secondary label.
  */
 @Composable
 fun CelvoUsageGauge(
-    usedAmount: Float,
-    totalAmount: Float,
-    unit: String,
-    flagUrl: String?,
+    progress: Float,
+    primaryText: String,
+    secondaryText: String,
     modifier: Modifier = Modifier,
+    isUnlimited: Boolean = false,
+    flag: (@Composable () -> Unit)? = null,
+    bottomContent: (@Composable () -> Unit)? = null,
     segmentCount: Int = 5,
     gapAngleDeg: Float = 2f,
     sweepAngleDeg: Float = 180f,
     strokeWidth: Dp = 35.dp,
     primaryColor: Color = MaterialTheme.colorScheme.primary,
     trackColor: Color = MaterialTheme.colorScheme.surfaceVariant,
-    animationDuration: Int = 1200
+    animationDuration: Int = 1200,
 ) {
-    // ── Progress calculation (NaN / Infinity-safe) ──
-    val targetProgress = if (totalAmount > 0f) {
-        (usedAmount / totalAmount).coerceIn(0f, 1f)
-    } else 0f
+    val targetProgress = if (isUnlimited) 1f else progress.coerceIn(0f, 1f)
 
-    // ── Animation (0 → targetProgress) ──
     val animatable = remember { Animatable(0f) }
 
     LaunchedEffect(targetProgress) {
@@ -88,53 +91,80 @@ fun CelvoUsageGauge(
         )
     }
 
-    // ── Segment geometry (pre-calculated, stable across recompositions) ──
     val startAngle = remember(sweepAngleDeg) {
-        // Center the gap at the bottom (6-o'clock = 90°).
-        // Arc starts at 90° + halfGap, sweeps clockwise back to 90° − halfGap.
         90f + (360f - sweepAngleDeg) / 2f
     }
 
-    Box(
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+    val unlimitedBrush = remember(primaryColor, secondaryColor) {
+        Brush.sweepGradient(
+            listOf(primaryColor, secondaryColor, primaryColor)
+        )
+    }
 
-        modifier = modifier
-            .aspectRatio(2f)
-            .padding(strokeWidth / 2),
-        contentAlignment = Alignment.Center,
+    // Slow opacity pulse on the ∞ glyph. Telegraphs "never runs out" without
+    // drawing attention away from the rest of the card.
+    val infinityAlpha: Float = if (isUnlimited) {
+        val transition = rememberInfiniteTransition(label = "unlimited-pulse")
+        transition.animateFloat(
+            initialValue = 0.85f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1800, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "unlimited-pulse-alpha"
+        ).value
+    } else 1f
+
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.TopCenter,
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(2f)
+                .padding(strokeWidth / 2)
+        ) {
             val arcSize = Size(size.width, size.width)
             val strokePx = strokeWidth.toPx()
 
             val totalGapsAngle = (segmentCount - 1) * gapAngleDeg
             val segmentSweep = (sweepAngleDeg - totalGapsAngle) / segmentCount
 
-            // Continuous fill angle (not quantized to segments)
             val fillAngle = animatable.value * sweepAngleDeg
 
             for (i in 0 until segmentCount) {
                 val segStart = startAngle + i * (segmentSweep + gapAngleDeg)
-                val segEnd = segStart + segmentSweep
-
-                // How far into the total sweep does this segment start/end?
                 val segStartInSweep = i * (segmentSweep + gapAngleDeg)
                 val segEndInSweep = segStartInSweep + segmentSweep
 
                 when {
-                    // Fully filled segment
                     fillAngle >= segEndInSweep -> {
-                        drawArc(
-                            color = primaryColor,
-                            startAngle = segStart,
-                            sweepAngle = segmentSweep,
-                            useCenter = false,
-                            style = Stroke(width = strokePx, cap = StrokeCap.Butt),
-                            size = arcSize,
-                        )
+                        if (isUnlimited) {
+                            drawArc(
+                                brush = unlimitedBrush,
+                                startAngle = segStart,
+                                sweepAngle = segmentSweep,
+                                useCenter = false,
+                                style = Stroke(width = strokePx, cap = StrokeCap.Butt),
+                                topLeft = Offset.Zero,
+                                size = arcSize,
+                            )
+                        } else {
+                            drawArc(
+                                color = primaryColor,
+                                startAngle = segStart,
+                                sweepAngle = segmentSweep,
+                                useCenter = false,
+                                style = Stroke(width = strokePx, cap = StrokeCap.Butt),
+                                size = arcSize,
+                            )
+                        }
                     }
-                    // Partially filled segment (the boundary)
+
                     fillAngle > segStartInSweep -> {
-                        // Draw track (background) for full segment
                         drawArc(
                             color = trackColor,
                             startAngle = segStart,
@@ -143,18 +173,29 @@ fun CelvoUsageGauge(
                             style = Stroke(width = strokePx, cap = StrokeCap.Butt),
                             size = arcSize,
                         )
-                        // Overlay primary for the filled portion
                         val filledPortion = fillAngle - segStartInSweep
-                        drawArc(
-                            color = primaryColor,
-                            startAngle = segStart,
-                            sweepAngle = filledPortion,
-                            useCenter = false,
-                            style = Stroke(width = strokePx, cap = StrokeCap.Butt),
-                            size = arcSize,
-                        )
+                        if (isUnlimited) {
+                            drawArc(
+                                brush = unlimitedBrush,
+                                startAngle = segStart,
+                                sweepAngle = filledPortion,
+                                useCenter = false,
+                                style = Stroke(width = strokePx, cap = StrokeCap.Butt),
+                                topLeft = Offset.Zero,
+                                size = arcSize,
+                            )
+                        } else {
+                            drawArc(
+                                color = primaryColor,
+                                startAngle = segStart,
+                                sweepAngle = filledPortion,
+                                useCenter = false,
+                                style = Stroke(width = strokePx, cap = StrokeCap.Butt),
+                                size = arcSize,
+                            )
+                        }
                     }
-                    // Fully unfilled segment
+
                     else -> {
                         drawArc(
                             color = trackColor,
@@ -169,37 +210,46 @@ fun CelvoUsageGauge(
             }
         }
 
-        // ── Center content: flag + data labels ──
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(top = 26.dp)
+            // Offsets the content below the arc band so the flag keeps a small,
+            // device-independent gap from the gauge instead of touching it.
+            modifier = Modifier.padding(top = 44.dp)
         ) {
-            if (!flagUrl.isNullOrEmpty()) {
-                AsyncImage(
-                    model = flagUrl,
-                    contentDescription = "Region Flag",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                )
+            if (flag != null) {
+                flag()
                 Spacer(modifier = Modifier.height(12.dp))
             }
-            Text(
-                text = "${usedAmount.formatDataAmount()} $unit",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.extended.textPrimary
-            )
+            if (isUnlimited) {
+                // titleLarge font (PlusJakartaSans) with a deliberately larger size
+                // so the ∞ glyph dominates the centre of the arc without claiming a
+                // dedicated typography token.
+                Text(
+                    text = primaryText,
+                    style = MaterialTheme.typography.titleLarge.copy(fontSize = 48.sp),
+                    color = MaterialTheme.colorScheme.extended.textPrimary,
+                    modifier = Modifier.alpha(infinityAlpha)
+                )
+            } else {
+                Text(
+                    text = primaryText,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.extended.textPrimary
+                )
+            }
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Secondary label — e.g. "/ 20 GB"
             Text(
-                text = "/ ${totalAmount.formatDataAmount()} $unit",
+                text = secondaryText,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.extended.textSecondary
             )
+
+            if (bottomContent != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                bottomContent()
+            }
         }
     }
 }

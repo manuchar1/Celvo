@@ -20,8 +20,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import celvo.feature.profile.generated.resources.Res
 import celvo.feature.profile.generated.resources.ic_message_text_circle
+import celvo.feature.profile.generated.resources.profile_title
 import com.mtislab.core.designsystem.components.buttons.CelvoCircleButton
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ProfileHeader(
@@ -31,14 +33,14 @@ fun ProfileHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .statusBarsPadding() // სისტემური აიქონების ადგილი
-            .height(68.dp) // ✅ ფიქსირებული სიმაღლე ჰედერს სტაბილურობას მატებს (ფიგმაში ~60-70dp ჩანს)
-            .padding(horizontal = 20.dp), // ✅ 16dp -> 20dp (უფრო ჰაეროვანია)
+            .statusBarsPadding()
+            .height(68.dp)
+            .padding(horizontal = 20.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically // ✅ ტექსტი და ღილაკი ზუსტად ცენტრში!
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "პროფილი",
+            text = stringResource(Res.string.profile_title),
             style = MaterialTheme.typography.titleLarge.copy(
                 letterSpacing = (-0.5).sp,
                 lineHeight = 28.sp
@@ -48,8 +50,7 @@ fun ProfileHeader(
             overflow = TextOverflow.Ellipsis
         )
 
-        // Spacer აღარ გვჭირდება, რადგან SpaceBetween და CenterVertically საქმეს აკეთებს,
-        // მაგრამ უსაფრთხოებისთვის (რომ ტექსტი არ მიეწებოს) დავტოვოთ მცირე დაშორება.
+
         Spacer(modifier = Modifier.widthIn(min = 16.dp))
 
         CelvoCircleButton(

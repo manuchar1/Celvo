@@ -6,11 +6,11 @@ import com.mtislab.core.domain.utils.DataError
 
 data class EsimDetailsState(
     val isLoading: Boolean = false,
-    val isRefreshing: Boolean = false, // Swipe-to-refresh-ისთვის
+    val isRefreshing: Boolean = false,
     val esim: UserEsim? = null,
-    val bundleInfo: EsimBundleInfo? = null, // ბექიდან წამოსული პაკეტები
+    val bundleInfo: EsimBundleInfo? = null,
     val error: DataError? = null,
-    val bundlesError: DataError? = null, // თუ პაკეტების წამოღებისას დაერორდა
+    val bundlesError: DataError? = null,
     val showQrCodeSheet: Boolean = false,
     val showOperatorsSheet: Boolean = false,
     val isEditingLabel: Boolean = false,
@@ -26,8 +26,11 @@ data class EsimDetailsState(
     val showError: Boolean
         get() = !isLoading && error != null
 
+    /** Only show tabs if there are history bundles to display */
+    val showTabSwitcher: Boolean
+        get() = bundleInfo?.hasHistory == true
 
-     enum class EsimDetailTab(val title: String) {
+    enum class EsimDetailTab(val title: String) {
         CURRENT("Current"),
         HISTORY("Archived")
     }

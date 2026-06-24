@@ -1,6 +1,8 @@
 package com.mtislab.celvo.feature.store.presentation.checkout
 
 import PaymentMethod
+import com.mtislab.celvo.feature.store.domain.model.WalletType
+import com.mtislab.core.domain.auth.AppleAuthProvider
 import com.mtislab.core.domain.auth.GoogleAuthProvider
 
 sealed interface CheckoutAction {
@@ -10,8 +12,15 @@ sealed interface CheckoutAction {
     data class SelectPaymentMethod(val method: PaymentMethod) : CheckoutAction
 
     // --- Wallet Payment (NEW) ---
-    /** Google Pay SDK returned an encrypted token successfully. */
-    data class WalletTokenReceived(val token: String) : CheckoutAction
+    /**
+     * Google Pay / Apple Pay SDK returned an encrypted token successfully.
+     * [walletType] is decided at the call-site in the Composable where the
+     * platform is known — the ViewModel stays platform-agnostic.
+     */
+    data class WalletTokenReceived(
+        val token: String,
+        val walletType: WalletType
+    ) : CheckoutAction
     /** User dismissed the Google Pay / Apple Pay sheet. */
     data object WalletPaymentCancelled : CheckoutAction
     /** Google Pay / Apple Pay SDK returned an error. */
@@ -20,7 +29,7 @@ sealed interface CheckoutAction {
     // --- Auth (Login Sheet) ---
     data object DismissLoginSheet : CheckoutAction
     data class LoginWithGoogle(val provider: GoogleAuthProvider? = null) : CheckoutAction
-    data object LoginWithApple : CheckoutAction
+    data class LoginWithApple(val provider: AppleAuthProvider? = null) : CheckoutAction
 
     // --- Promo Code ---
     data object OpenPromoSheet : CheckoutAction

@@ -71,7 +71,8 @@ sealed interface Route {
     @Serializable
     data class Search(
         val initialTab: SearchTab = SearchTab.COUNTRY,
-        val focusSearch: Boolean = false
+        val focusSearch: Boolean = false,
+        val filterIsoCodes: String = ""
     ) : Route
 
     @Serializable

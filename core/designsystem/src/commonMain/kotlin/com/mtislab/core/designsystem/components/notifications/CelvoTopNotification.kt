@@ -148,23 +148,22 @@ private fun NotificationBanner(
             }
 
             // ── Dismiss action ──
-/*            IconButton(
-                onClick = onDismiss,
-                modifier = Modifier.size(32.dp),
-                colors = IconButtonDefaults.iconButtonColors(
-                    contentColor = extended.textSecondary,
-                ),
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Close,
-                    contentDescription = "დახურვა",
-                    modifier = Modifier.size(18.dp),
-                )
-            }*/
+            /*            IconButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.size(32.dp),
+                            colors = IconButtonDefaults.iconButtonColors(
+                                contentColor = extended.textSecondary,
+                            ),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Close,
+                                contentDescription = "დახურვა",
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }*/
         }
     }
 }
-
 
 
 @Composable

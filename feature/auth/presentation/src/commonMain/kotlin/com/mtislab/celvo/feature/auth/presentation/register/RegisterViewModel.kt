@@ -41,19 +41,26 @@ class RegisterViewModel(
 
             if (provider != null) {
                 // --- NATIVE APPLE SIGN-IN (via ASAuthorization) ---
-                // Try native first; if the provider returns a token, use the
-                // fast IDToken path (no browser redirect).
+                // Try native first; if the provider returns a token + raw nonce,
+                // use the fast IDToken path (no browser redirect).
                 when (val tokenResult = provider.getAppleIdToken()) {
                     is Resource.Success -> {
-                        handleAuthResult(authRepository.signInWithAppleNative(tokenResult.data))
+                        val (idToken, nonce) = tokenResult.data
+                        handleAuthResult(
+                            authRepository.signInWithAppleNative(
+                                idToken = idToken,
+                                nonce = nonce,
+                            )
+                        )
                     }
                     is Resource.Failure -> {
-                        // Native unavailable — fall back to web OAuth.
-                        handleAuthResult(authRepository.signInWithApple())
+                        // Native unavailable or user-canceled — surface the
+                        // local error to the UI (custom notification).
+                        _state.update { it.copy(isLoading = false, error = tokenResult.error) }
                     }
                 }
             } else {
-                // --- WEB FALLBACK ---
+                // --- WEB FALLBACK (Android / unsupported targets) ---
                 handleAuthResult(authRepository.signInWithApple())
             }
         }

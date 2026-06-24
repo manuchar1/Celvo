@@ -1,9 +1,7 @@
 <resources>
 
-
     <string name="tab_country">Country</string>
     <string name="tab_region">Regional</string>
-
 
     <string name="search_placeholder">Search country</string>
     <string name="search_no_results">No results found</string>
@@ -14,4 +12,24 @@
     <string name="section_regional_plans">Regional plans</string>
     <string name="action_retry">Try again</string>
     <string name="action_see_all">See more</string>
+
+    <string name="myesim_title">My E-Sim</string>
+    <string name="myesim_add">Add</string>
+    <string name="myesim_add_new">New eSIM</string>
+    <string name="myesim_empty_title">Your purchased eSIMs will appear here</string>
+    <string name="myesim_empty_message">Add and manage multiple eSIMs across different devices easily.</string>
+    <string name="myesim_error_title">Something went wrong</string>
+    <string name="myesim_error_message">We couldn\'t load your eSIMs. Please try again.</string>
+    <string name="myesim_retry">Try Again</string>
+    <string name="myesim_purchased_packages">Purchased packages:</string>
+    <string name="myesim_install">Install</string>
+    <string name="myesim_install_not_ready">This eSIM is not ready for installation.</string>
+    <string name="myesim_install_failed">Couldn\'t open the eSIM installer. Please try again.</string>
+    <string name="myesim_packages">Packages</string>
+    <string name="myesim_details">Details</string>
+    <string name="esim_details_load_error">We couldn\'t load the package details. Please try again.</string>
+    <string name="esim_details_no_active">No active packages</string>
+    <string name="esim_details_no_history">No history available</string>
+    <string name="esim_details_days_left">days left</string>
+    <string name="esim_details_remaining">remaining</string>
 </resources>

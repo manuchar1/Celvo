@@ -2,30 +2,34 @@ package com.mtislab.celvo.feature.store.presentation.store
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import celvo.feature.store.generated.resources.Res
+import celvo.feature.store.generated.resources.store_install_link_failed
 import com.mtislab.celvo.feature.store.domain.model.MarketingBanner
 import com.mtislab.celvo.feature.store.domain.model.StoreItem
-import com.mtislab.celvo.feature.store.domain.repository.PromoClaimRepository
 import com.mtislab.celvo.feature.store.domain.repository.StoreRepository
 import com.mtislab.core.data.session.SessionManager
 import com.mtislab.core.domain.auth.AuthState
+import com.mtislab.core.domain.connectivity.ConnectivityObserver
+import com.mtislab.core.domain.connectivity.onBackOnline
 import com.mtislab.core.domain.esim.EsimLinkGenerator
 import com.mtislab.core.domain.logging.CelvoLogger
 import com.mtislab.core.domain.model.ActiveEsimHome
 import com.mtislab.core.domain.utils.DataError
 import com.mtislab.core.domain.utils.Resource
+import com.mtislab.core.domain.utils.isConnectivityError
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 
 // ── UI Event ──────────────────────────────────────────────────────────────────
 
@@ -46,24 +50,18 @@ class StoreViewModel(
     private val repository: StoreRepository,
     private val sessionManager: SessionManager,
     private val linkGenerator: EsimLinkGenerator,
-    private val promoClaimRepository: PromoClaimRepository,
     private val logger: CelvoLogger,
+    private val connectivityObserver: ConnectivityObserver,
 ) : ViewModel() {
 
     // ── One-shot events ──────────────────────────────────────────────────
 
-    private val _events = Channel<StoreEvent>()
-    val events = _events.receiveAsFlow()
-
     private val _uiEvent = Channel<StoreUiEvent>(Channel.BUFFERED)
     val uiEvent = _uiEvent.receiveAsFlow()
 
-    // ── Raw banners from API (before claim-state merge) ──────────────────
-    private var rawBanners: List<MarketingBanner> = emptyList()
-
     // ── Page-level loading / error ───────────────────────────────────────
     private val _isLoading = MutableStateFlow(true)
-    private val _errorMessage = MutableStateFlow<String?>(null)
+    private val _pageError = MutableStateFlow<DataError?>(null)
 
     // ── Store catalog ────────────────────────────────────────────────────
     private val _allCountries = MutableStateFlow<List<StoreItem>>(emptyList())
@@ -150,14 +148,14 @@ class StoreViewModel(
     // ── Public state ─────────────────────────────────────────────────────
 
     val state = combine(
-        combine(_isLoading, _errorMessage) { loading, error -> loading to error },
+        combine(_isLoading, _pageError) { loading, error -> loading to error },
         _isLoggedIn,
         _dataPayload,
         _uiFlags,
     ) { (loading, error), loggedIn, data, flags ->
         when {
             loading -> StoreState.Loading
-            error != null -> StoreState.Error(message = error)
+            error != null -> StoreState.Error(error = error)
             else -> StoreState.Content(
                 isLoggedIn = loggedIn,
                 activeEsimHome = if (loggedIn) data.activeEsimHome else null,
@@ -187,7 +185,7 @@ class StoreViewModel(
     init {
         loadStoreData()
         observeAuthState()
-        observeClaimedState()
+        observeConnectivity()
     }
 
     // ── Action Handler ───────────────────────────────────────────────────
@@ -198,7 +196,9 @@ class StoreViewModel(
             is StoreAction.OnItemClick,
             is StoreAction.OnRegionClick,
             is StoreAction.OnBannerClick,
-            is StoreAction.OnSearchClick -> Unit
+            is StoreAction.OnSearchClick,
+            is StoreAction.OnTopUpClick,
+            is StoreAction.OnDetailsClick -> Unit
 
             // eSIM switcher
             StoreAction.OnEsimSwitcherClick -> _showEsimSwitcher.value = true
@@ -210,26 +210,14 @@ class StoreViewModel(
                 loadPackagesIfNeeded(action.index)
             }
 
-            // ── Promo claim (from interactive banner CTA) ────────────────
-            is StoreAction.ClaimBannerPromo -> claimBannerPromo(action.banner)
-
-            // DEPRECATED: Remove OnClaimPromoCode once PromoStateHolder is deleted.
-            // Keeping it as a no-op to avoid breaking compilation during transition.
-            is StoreAction.OnClaimPromoCode -> Unit
-
             // Active eSIM quick-actions
             StoreAction.OnRetryLoadPackages -> loadPackagesIfNeeded(_selectedEsimIndex.value)
             StoreAction.OnInstallClick -> handleInstallClick()
-            StoreAction.OnTopUpClick -> { /* TODO: navigate to top-up */ }
-            StoreAction.OnDetailsClick -> { /* TODO: navigate to details */ }
-            StoreAction.OnSupportClick -> { /* TODO: navigate to support */ }
+            // Opens the platform-specific install guide; navigation handled in StoreScreenRoot.
+            StoreAction.OnSupportClick -> Unit
 
             // Page-level
-            StoreAction.OnRetry -> {
-                loadStoreData()
-                reloadBanners(force = true)
-                loadEsimHome()
-            }
+            StoreAction.OnRetry -> reload()
 
             StoreAction.OnRefresh -> refreshEsimHome()
         }
@@ -237,55 +225,6 @@ class StoreViewModel(
 
     fun onScreenResumed() {
         refreshEsimHome()
-    }
-
-    // ── Promo claim (NEW — replaces PromoStateHolder) ────────────────────
-
-    /**
-     * Reactively observes locally claimed banner IDs from DataStore.
-     * Whenever a claim changes, re-merges `isClaimed = true` onto
-     * [rawBanners] and pushes the result into [_marketingBanners].
-     *
-     * This is the key piece that makes the banner UI update instantly
-     * after claiming — no API re-fetch needed.
-     */
-    private fun observeClaimedState() {
-        promoClaimRepository.observeClaimedBannerIds()
-            .onEach { claimedIds ->
-                if (rawBanners.isNotEmpty()) {
-                    _marketingBanners.value = rawBanners.map { banner ->
-                        banner.copy(isClaimed = banner.id in claimedIds)
-                    }
-                }
-            }
-            .launchIn(viewModelScope)
-    }
-
-    /**
-     * Persists the claim in DataStore and emits a success notification event.
-     * The banner UI updates reactively via [observeClaimedState] — no manual
-     * state mutation needed here.
-     */
-    private fun claimBannerPromo(banner: MarketingBanner) {
-        val code = banner.promoCode ?: return
-        if (banner.isClaimed) return
-
-        logger.info("[Store] claimBannerPromo called — code=$code, bannerId=${banner.id}")
-
-        viewModelScope.launch {
-            promoClaimRepository.claimPromo(
-                bannerId = banner.id,
-                code = code,
-            )
-            logger.info("[Store] claimPromo persisted — sending event")
-
-            _events.send(
-                StoreEvent.PromoClaimSuccess(
-                    code = code,
-                    message = banner.claimedTitle ?: "პრომოკოდი გააქტიურდა: $code",
-                )
-            )
-        }
     }
 
     // ── Auth ─────────────────────────────────────────────────────────────
@@ -309,11 +248,35 @@ class StoreViewModel(
 
     // ── Store catalog ────────────────────────────────────────────────────
 
+    /**
+     * Re-attempts every page-level load. Shared by the manual retry button and
+     * by [observeConnectivity] when the device comes back online.
+     */
+    private fun reload() {
+        loadStoreData()
+        reloadBanners(force = true)
+        loadEsimHome()
+    }
+
+    /**
+     * Auto-recovers from a no-internet failure: when connectivity returns while
+     * the page still shows a connectivity error, the catalog is reloaded so the
+     * placeholder gives way to content. A server error is left untouched — it
+     * carries its own manual retry.
+     */
+    private fun observeConnectivity() {
+        connectivityObserver.onBackOnline(viewModelScope) {
+            if (_pageError.value?.isConnectivityError == true) {
+                reload()
+            }
+        }
+    }
+
     private fun loadStoreData() {
         if (_allCountries.value.isNotEmpty() || _regions.value.isNotEmpty()) return
         viewModelScope.launch {
             _isLoading.value = true
-            _errorMessage.value = null
+            _pageError.value = null
             val countriesDef = async { repository.getCountries() }
             val regionsDef = async { repository.getRegions() }
             val countriesRes = countriesDef.await()
@@ -326,7 +289,7 @@ class StoreViewModel(
                 _regions.value = regionsRes.data
             }
             if (countriesRes is Resource.Failure && regionsRes is Resource.Failure) {
-                _errorMessage.value = "მონაცემების ჩატვირთვა ვერ მოხერხდა"
+                _pageError.value = countriesRes.error
             }
             _isLoading.value = false
         }
@@ -335,46 +298,21 @@ class StoreViewModel(
     // ── Marketing banners ────────────────────────────────────────────────
 
     /**
-     * Fetches banners for the given [placement] from the backend.
-     * Stores raw results in [rawBanners], then lets [observeClaimedState]
-     * merge the `isClaimed` flags before pushing to [_marketingBanners].
+     * Fetches informational banners for the given [placement] and publishes
+     * them to [_marketingBanners].
      */
     private fun loadBanners(placement: String) {
         viewModelScope.launch {
             when (val result = repository.getBanners(placement)) {
                 is Resource.Success -> {
-                    rawBanners = result.data
+                    _marketingBanners.value = result.data
                     _lastLoadedPlacement = placement
-
-                    // Trigger an immediate merge with current claimed state.
-                    // After this, the observeClaimedState flow keeps it in sync.
-                    mergeBannersWithClaimedState()
                 }
 
                 is Resource.Failure -> {
                     logger.warn("[Store] Failed to load banners for placement=$placement")
                 }
             }
-        }
-    }
-
-    /**
-     * One-shot merge for when raw banners arrive from API.
-     * Reads current claims and applies isClaimed flags.
-     */
-    private suspend fun mergeBannersWithClaimedState() {
-        val activeCode = promoClaimRepository.getActivePromoCode()
-        // Quick path: if nothing is claimed, just push raw banners as-is
-        if (activeCode == null) {
-            _marketingBanners.value = rawBanners
-            return
-        }
-
-        // Full merge: take a single snapshot of claimed banner IDs
-        val claimedIds = promoClaimRepository.observeClaimedBannerIds().first()
-
-        _marketingBanners.value = rawBanners.map { banner ->
-            banner.copy(isClaimed = banner.id in claimedIds)
         }
     }
 
@@ -538,20 +476,11 @@ class StoreViewModel(
                 _uiEvent.send(StoreUiEvent.OpenUrl(url))
             } catch (e: Exception) {
                 logger.error("[Store] Failed to generate install link for eSIM $esimId", e)
-                _installationError.value = "ინსტალაციის ბმული ვერ შეიქმნა"
+                _installationError.value = getString(Res.string.store_install_link_failed)
             } finally {
                 _isInstalling.value = false
                 _installingEsimId.value = null
             }
         }
     }
-}
-
-// ── Events ────────────────────────────────────────────────────────────────────
-
-sealed interface StoreEvent {
-    data class PromoClaimSuccess(
-        val code: String,
-        val message: String,
-    ) : StoreEvent
 }

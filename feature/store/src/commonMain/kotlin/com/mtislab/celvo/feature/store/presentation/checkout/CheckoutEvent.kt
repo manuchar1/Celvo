@@ -1,12 +1,14 @@
 package com.mtislab.celvo.feature.store.presentation.checkout
 
+import com.mtislab.core.presentation.util.UiText
+
 sealed interface CheckoutEvent {
 
     /** Open payment redirect URL in in-app browser (Chrome Custom Tab / Safari VC). */
     data class OpenWebUrl(val url: String) : CheckoutEvent
 
     /** Show a Snackbar error message. */
-    data class ShowError(val message: String) : CheckoutEvent
+    data class ShowError(val message: UiText) : CheckoutEvent
 
     /**
      * Navigate to PaymentResultScreen.

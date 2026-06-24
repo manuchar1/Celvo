@@ -52,9 +52,16 @@ data class UserEsim(
                 startTime = pkg.startTime,
                 endTime = pkg.endTime,
                 remainingDays = pkg.remainingDays,
+                duration = pkg.duration,
                 countryCode = pkg.countryCode,
                 countryName = pkg.countryName,
-                flagUrl = pkg.flagUrl
+                flagUrl = pkg.flagUrl,
+                description = pkg.description,
+                throttleSpeedKbps = pkg.throttleSpeedKbps,
+                throttleAfterMb = pkg.throttleAfterMb,
+                bundleGroups = pkg.bundleGroups,
+                networkTypes = pkg.networkTypes,
+                roamingCountries = pkg.roamingCountries
             )
         }
 
@@ -64,10 +71,22 @@ data class UserEsim(
             return "eSIM #$esimNumber ($status)"
         }
 
-
+    /**
+     * Whether the eSIM profile is currently installed on a device. Drives the
+     * Home action button — an installed eSIM offers "Add data", a not-yet-
+     * installed one offers "Install". A released / uninstalled profile reads as
+     * not installed even if it was installed at some point in the past, so this
+     * stays consistent with the status shown in the eSIM header.
+     */
+    val isEffectivelyInstalled: Boolean
+        get() = installed ||
+                profileStatus == ProfileStatus.INSTALLED ||
+                profileStatus == ProfileStatus.ENABLED ||
+                profileStatus == ProfileStatus.DISABLED
 }
 
 data class EsimHomePackage(
+    val assignmentId: AssignmentId,
     val bundleName: String,
     val displayName: String,
     val packageStatus: PackageStatus,
@@ -82,11 +101,20 @@ data class EsimHomePackage(
     val startTime: String?,
     val endTime: String?,
     val remainingDays: Int?,
+    val duration: String?,
     val countryCode: String?,
     val countryName: String?,
     val flagUrl: String?,
     val isActive: Boolean,
-    val isUnlimited: Boolean
+    val isUnlimited: Boolean,
+    /** 0 = active, 1..N = queued, null = terminal (not shown on Home). */
+    val queuePosition: Int?,
+    val description: String? = null,
+    val throttleSpeedKbps: Int? = null,
+    val throttleAfterMb: Int? = null,
+    val bundleGroups: List<String> = emptyList(),
+    val networkTypes: List<String> = emptyList(),
+    val roamingCountries: List<String> = emptyList()
 )
 
 data class ActiveBundle(
@@ -103,9 +131,16 @@ data class ActiveBundle(
     val startTime: String?,
     val endTime: String?,
     val remainingDays: Int?,
+    val duration: String?,
     val countryCode: String?,
     val countryName: String?,
-    val flagUrl: String?
+    val flagUrl: String?,
+    val description: String? = null,
+    val throttleSpeedKbps: Int? = null,
+    val throttleAfterMb: Int? = null,
+    val bundleGroups: List<String> = emptyList(),
+    val networkTypes: List<String> = emptyList(),
+    val roamingCountries: List<String> = emptyList()
 )
 
 enum class ProfileStatus { RELEASED, INSTALLED, ENABLED, DISABLED, UNKNOWN }

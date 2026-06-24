@@ -16,6 +16,7 @@
     <string name="action_retry">სცადეთ თავიდან</string>
     <string name="action_see_all">მეტის ნახვა</string>
     <string name="select_esim">აირჩიე eSIM</string>
+    <string name="esim_label">eSIM</string>
     <string name="add_data">შევსება</string>
     <string name="install">დაყენება</string>
     <string name="my_plans">პაკეტები</string>
@@ -26,5 +27,95 @@
     <string name="packages_loading">პაკეტები იტვირთება…</string>
     <string name="packages_load_failed">მონაცემების ჩატვირთვა ვერ მოხერხდა</string>
     <string name="gauge_syncing">სინქრონიზაცია…</string>
+    <string name="search_clear">გასუფთავება</string>
 
+    <!-- Checkout screen -->
+    <string name="checkout_title">ყიდვა</string>
+    <string name="checkout_your_device">შენი მოწყობილობა</string>
+    <string name="checkout_esim_compatible">eSIM თავსებადი</string>
+    <string name="checkout_payment_method">გადახდის მეთოდი</string>
+    <string name="checkout_promo_code_label">პრომოკოდი</string>
+    <string name="checkout_package_price">პაკეტის საფასური</string>
+    <string name="checkout_discount">ფასდაკლება</string>
+    <string name="checkout_total">ჯამური თანხა</string>
+    <string name="checkout_validity_info">მოქმედების ვადა დაიწყება eSIM-ის ქსელთან დაკავშირების მომენტიდან.</string>
+    <string name="action_continue">გაგრძელება</string>
+    <string name="action_claim_promo">კოდის გააქტიურება</string>
+
+    <!-- Checkout errors -->
+    <string name="error_3ds_redirect_failed">3DS გადამისამართება ვერ მოხერხდა</string>
+    <string name="error_no_internet">ინტერნეტ კავშირი არ არის</string>
+    <string name="error_server_error_try_later">სერვერის შეცდომა, სცადეთ მოგვიანებით</string>
+    <string name="error_payment_failed">გადახდა ვერ მოხერხდა, სცადეთ თავიდან</string>
+    <string name="error_enter_promo_code">შეიყვანეთ პრომოკოდი</string>
+    <string name="error_promo_invalid">პრომოკოდი არასწორია</string>
+    <string name="error_bad_request">არასწორი მონაცემები</string>
+    <string name="error_generic_try_again">შეცდომა, სცადეთ თავიდან</string>
+    <string name="error_auth_failed">ავტორიზაცია ვერ მოხერხდა: %1$s</string>
+
+    <!-- Topup options -->
+    <string name="topup_other">სხვა</string>
+
+    <!-- Home / Store -->
+    <string name="home_data_stale_warning">მონაცემები შესაძლოა მოძველებული იყოს</string>
+    <string name="store_error_title">დაფიქსირდა შეცდომა</string>
+    <string name="store_error_load_failed">მონაცემების ჩატვირთვა ვერ მოხერხდა</string>
+    <string name="store_install_link_failed">ინსტალაციის ბმული ვერ შეიქმნა</string>
+
+    <!-- Marketing banner -->
+    <string name="banner_default_cta">გაიგე მეტი</string>
+
+    <!-- Auto top-up -->
+    <string name="autotopup_title">ავტომატური შევსება</string>
+    <string name="autotopup_description_intro">ინტერნეტის ამოწურვის შემთხვევაში,\nშევსება მოხდება ავტომატურად. </string>
+    <string name="autotopup_description_link">გაიგე მეტი</string>
+    <string name="autotopup_select_amount">აირჩიე რაოდენობა</string>
+    <string name="autotopup_per_topup">თითო შევსება: %1$s - %2$s %3$s</string>
+
+    <!-- Packages -->
+    <string name="packages_tab_data">გიგაბაიტები</string>
+    <string name="packages_tab_unlimited">ულიმიტო</string>
+    <string name="packages_pick_plan">აირჩიე პაკეტი</string>
+    <string name="packages_popular_badge">პოპულარული</string>
+    <string name="packages_error_load_failed">შეცდომა მონაცემების მიღებისას</string>
+    <string name="packages_badge_5g">5G</string>
+    <string name="packages_badge_4g">4G</string>
+    <string name="packages_badge_countries">%1$d ქვეყანა</string>
+    <string name="packages_subtitle_separator"> · </string>
+    <string name="packages_badge_discount">-%1$d%%</string>
+    <string name="packages_card_details_cd">პაკეტის დეტალები</string>
+
+    <!-- Plan details sheet -->
+    <string name="plan_details_title">პაკეტის დეტალები</string>
+    <string name="plan_details_description_title">პაკეტის შესახებ</string>
+    <string name="plan_details_operators_title">ოპერატორები</string>
+    <string name="plan_details_coverage_title">გავრცელება</string>
+    <string name="plan_details_coverage_subtitle">%1$d ქვეყანა</string>
+    <string name="plan_details_networks_title">ქსელი</string>
+
+    <!-- Payment verification -->
+    <string name="verification_loading_title">გადახდა მოწმდება…</string>
+    <string name="verification_loading_subtitle">გთხოვთ დაელოდოთ</string>
+    <string name="verification_success_new_esim">eSIM წარმატებით შეძენილია!</string>
+    <string name="verification_success_topup">ბალანსი წარმატებით შეივსო!</string>
+    <string name="verification_topup_no_install">მონაცემები დაემატა თქვენს აქტიურ eSIM-ს. დაყენება საჭირო არ არის</string>
+    <string name="verification_data_format">%1$d GB / %2$d დღე</string>
+    <string name="verification_install_esim">eSIM-ის დაყენება</string>
+    <string name="verification_installing">მიმდინარეობს დაყენება…</string>
+    <string name="verification_my_esims">ჩემი eSIM-ები</string>
+    <string name="verification_install_failed">დაყენება ვერ მოხერხდა</string>
+    <string name="verification_retry">თავიდან ცდა</string>
+    <string name="verification_confirmation_required">დადასტურება საჭიროა…</string>
+    <string name="verification_later">მოგვიანებით</string>
+    <string name="verification_back_to_home">მთავარ გვერდზე დაბრუნება</string>
+    <string name="verification_error_subtitle">გთხოვთ სცადოთ თავიდან ან დაბრუნდეთ მთავარ გვერდზე</string>
+    <string name="verification_error_payment_failed">გადახდა ვერ მოხერხდა</string>
+    <string name="verification_error_payment_refunded">გადახდა დაბრუნებულია</string>
+    <string name="verification_error_timeout">ვერიფიკაციის დრო ამოიწურა, სცადეთ თავიდან</string>
+    <string name="verification_error_no_internet">ინტერნეტ კავშირი არ არის</string>
+    <string name="verification_error_server">სერვერის შეცდომა, სცადეთ მოგვიანებით</string>
+    <string name="verification_error_unauthorized">ავტორიზაცია საჭიროა</string>
+    <string name="verification_error_not_found">შეკვეთა ვერ მოიძებნა</string>
+    <string name="verification_error_request_timeout">კავშირის დრო ამოიწურა</string>
+    <string name="verification_error_generic">შეცდომა, სცადეთ თავიდან</string>
 </resources>

@@ -29,6 +29,11 @@ node_modules/
 google-services.json
 GoogleService-Info.plist
 
+# --- Release signing (NEVER commit keystore or its passwords) ---
+keystore.properties
+*.jks
+*.keystore
+
 # --- Kotlin Multiplatform & iOS Specifics ---
 iosApp/Pods/
 *.framework

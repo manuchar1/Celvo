@@ -11,11 +11,11 @@ import org.jetbrains.compose.resources.DrawableResource
 fun getRegionIcon(id: String): DrawableResource {
     return when (id.trim().lowercase()) {
         "asia" -> Res.drawable.ic_asia
-        "europe" -> Res.drawable.ic_europe
+        "europe", "europe extra" -> Res.drawable.ic_europe
         "north-america", "na" -> Res.drawable.ic_north_america
         "south-america", "latin-america", "la" -> Res.drawable.ic_latino_america
         "africa" -> Res.drawable.ic_globe
-        "middle-east"-> Res.drawable.ic_globe
+        "middle-east" -> Res.drawable.ic_globe
         else -> Res.drawable.ic_globe
     }
 }

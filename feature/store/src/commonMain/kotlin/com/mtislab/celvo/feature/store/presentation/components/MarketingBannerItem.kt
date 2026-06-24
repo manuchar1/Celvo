@@ -28,8 +28,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import celvo.feature.store.generated.resources.Res
+import celvo.feature.store.generated.resources.banner_default_cta
 import celvo.feature.store.generated.resources.ic_layer_circle
 import coil3.compose.AsyncImage
+import org.jetbrains.compose.resources.stringResource
 import com.mtislab.celvo.feature.store.domain.model.MarketingBanner
 import com.mtislab.core.designsystem.components.cards.CelvoCard
 import com.mtislab.core.designsystem.theme.CelvoDark900
@@ -118,7 +120,8 @@ fun MarketingBannerItem(
                         modifier = Modifier.height(36.dp)
                     ) {
                         Text(
-                            text = banner.ctaText,
+                            text = banner.ctaText.takeIf { it.isNotBlank() }
+                                ?: stringResource(Res.string.banner_default_cta),
                             style = MaterialTheme.typography.titleXSmall,
                             fontSize = 14.sp
                         )

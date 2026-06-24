@@ -39,8 +39,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,7 +54,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import celvo.feature.store.generated.resources.Res
+import celvo.feature.store.generated.resources.action_continue
 import celvo.feature.store.generated.resources.card
+import celvo.feature.store.generated.resources.checkout_discount
+import celvo.feature.store.generated.resources.checkout_esim_compatible
+import celvo.feature.store.generated.resources.checkout_package_price
+import celvo.feature.store.generated.resources.checkout_payment_method
+import celvo.feature.store.generated.resources.checkout_promo_code_label
+import celvo.feature.store.generated.resources.checkout_title
+import celvo.feature.store.generated.resources.checkout_total
+import celvo.feature.store.generated.resources.checkout_validity_info
+import celvo.feature.store.generated.resources.checkout_your_device
+import celvo.feature.store.generated.resources.enter_code
 import celvo.feature.store.generated.resources.ic_card
 import celvo.feature.store.generated.resources.ic_credit_card
 import celvo.feature.store.generated.resources.ic_info_circle
@@ -65,8 +74,12 @@ import celvo.feature.store.generated.resources.ic_promo_code
 import com.celvo.core.designsystem.resources.ic_apple_logo
 import com.celvo.core.designsystem.resources.ic_google_logo
 import com.celvo.core.designsystem.resources.ic_left_arrow
+import com.celvo.core.designsystem.resources.legal_consent_checkout
+import com.celvo.core.designsystem.resources.legal_terms_of_service
 import com.mtislab.celvo.feature.store.data.mapper.toPackageInfoCardData
+import com.mtislab.celvo.feature.store.domain.model.WalletType
 import com.mtislab.core.data.platform
+import com.mtislab.core.designsystem.components.auth.rememberAppleAuthProvider
 import com.mtislab.core.designsystem.components.auth.rememberGoogleAuthProvider
 import com.mtislab.core.designsystem.components.bottomsheets.LoginBottomSheet
 import com.mtislab.core.designsystem.components.buttons.CelvoActionIconButton
@@ -74,8 +87,16 @@ import com.mtislab.core.designsystem.components.buttons.CelvoButton
 import com.mtislab.core.designsystem.components.cards.CelvoCard
 import com.mtislab.core.designsystem.components.cards.PackageInfoRow
 import com.mtislab.core.designsystem.components.cards.ProductInfoCard
+import com.mtislab.core.designsystem.components.notifications.CelvoNotificationData
+import com.mtislab.core.designsystem.components.notifications.CelvoNotificationType
+import com.mtislab.core.designsystem.components.notifications.LocalCelvoNotification
 import com.mtislab.core.designsystem.components.payment.NativePayButton
 import com.mtislab.core.designsystem.components.payment.rememberNativePayLauncher
+import com.mtislab.core.designsystem.legal.LegalConsentText
+import com.mtislab.core.designsystem.legal.LegalLink
+import com.mtislab.core.designsystem.legal.LegalLinks
+import com.mtislab.core.designsystem.theme.CelvoDark900
+import com.mtislab.core.designsystem.theme.CelvoPurple300
 import com.mtislab.core.designsystem.theme.CelvoPurple500
 import com.mtislab.core.designsystem.theme.PlusJakartaSans
 import com.mtislab.core.designsystem.theme.extended
@@ -97,17 +118,19 @@ fun CheckoutScreenRoot(
     viewModel: CheckoutViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val notificationState = LocalCelvoNotification.current
 
     val googleAuthProvider = rememberGoogleAuthProvider()
+    val appleAuthProvider = rememberAppleAuthProvider()
     val openBrowser = rememberBrowserOpener()
 
     val isAndroid = remember { platform().contains("Android", ignoreCase = true) }
 
-    // NEW: Native wallet payment launcher (Google Pay on Android, stub on iOS)
+    // NEW: Native wallet payment launcher (Google Pay on Android, Apple Pay on iOS)
     val nativePayLauncher = rememberNativePayLauncher(
         onTokenReceived = { token ->
-            viewModel.onAction(CheckoutAction.WalletTokenReceived(token))
+            val walletType = if (isAndroid) WalletType.GOOGLE_PAY else WalletType.APPLE_PAY
+            viewModel.onAction(CheckoutAction.WalletTokenReceived(token, walletType))
         },
         onCancelled = {
             viewModel.onAction(CheckoutAction.WalletPaymentCancelled)
@@ -125,12 +148,17 @@ fun CheckoutScreenRoot(
                     openBrowser(event.url)
                 }
                 is CheckoutEvent.ShowError -> {
-                    snackbarHostState.showSnackbar(event.message)
+                    notificationState.show(
+                        CelvoNotificationData(
+                            message = event.message.asStringAsync(),
+                            type = CelvoNotificationType.Error
+                        )
+                    )
                 }
                 is CheckoutEvent.NavigateToPaymentResult -> {
                     onNavigateToPaymentResult(event.isSuccess, event.orderId)
                 }
-                // NEW: Launch native wallet payment sheet
+                //  Launch native wallet payment sheet
                 is CheckoutEvent.LaunchNativeWalletPayment -> {
                     nativePayLauncher.launch(
                         amountCents = event.amountCents,
@@ -153,13 +181,18 @@ fun CheckoutScreenRoot(
             type = type,
             region = region,
             isAndroid = isAndroid,
-            snackbarHostState = snackbarHostState,
             onClose = onClose,
             onAction = { action ->
                 when (action) {
                     is CheckoutAction.LoginWithGoogle -> {
                         val provider = if (isAndroid) googleAuthProvider else null
                         viewModel.onAction(CheckoutAction.LoginWithGoogle(provider))
+                    }
+                    is CheckoutAction.LoginWithApple -> {
+                        // Native Apple provider on iOS; null on Android routes
+                        // the ViewModel to the web fallback.
+                        val provider = if (!isAndroid) appleAuthProvider else null
+                        viewModel.onAction(CheckoutAction.LoginWithApple(provider))
                     }
                     else -> viewModel.onAction(action)
                 }
@@ -179,7 +212,6 @@ private fun CheckoutContent(
     type: String,
     region: String,
     isAndroid: Boolean,
-    snackbarHostState: SnackbarHostState,
     onClose: () -> Unit,
     onAction: (CheckoutAction) -> Unit
 ) {
@@ -191,7 +223,7 @@ private fun CheckoutContent(
         LoginBottomSheet(
             onDismiss = { onAction(CheckoutAction.DismissLoginSheet) },
             onGoogleClick = { onAction(CheckoutAction.LoginWithGoogle()) },
-            onAppleClick = { onAction(CheckoutAction.LoginWithApple) },
+            onAppleClick = { onAction(CheckoutAction.LoginWithApple()) },
             isIos = !isAndroid
         )
     }
@@ -203,7 +235,7 @@ private fun CheckoutContent(
         PromoCodeBottomSheet(
             code = state.promo.code,
             isValidating = state.promo.isValidating,
-            errorMessage = state.promo.errorMessage,
+            errorMessage = state.promo.errorMessage?.asString(),
             onCodeChanged = { onAction(CheckoutAction.PromoCodeChanged(it)) },
             onApplyClick = { onAction(CheckoutAction.ApplyPromoCode) },
             onDismiss = { onAction(CheckoutAction.DismissPromoSheet) }
@@ -213,7 +245,8 @@ private fun CheckoutContent(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Color.Transparent,
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        // Errors surface via the global CelvoNotificationHost (top banner),
+        // not a local Snackbar — consistent with the rest of the app.
         // NOTE: No bottomBar. The payment button lives inside the scrollable Column.
     ) { innerPadding ->
         Column(
@@ -225,10 +258,10 @@ private fun CheckoutContent(
         ) {
             Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
 
-            // --- Header ---
+
             CheckoutHeader(onClose = onClose)
 
-            // --- Product Info (untouched) ---
+
             ProductInfoCard(
                 data = pkg.toPackageInfoCardData(
                     countryName = countryName,
@@ -238,8 +271,8 @@ private fun CheckoutContent(
                 trailingRow = {
                     PackageInfoRow(
                         icon = Res.drawable.ic_phone,
-                        label = "შენი მოწყობილობა",
-                        value = "eSIM თავსებადი",
+                        label = stringResource(Res.string.checkout_your_device),
+                        value = stringResource(Res.string.checkout_esim_compatible),
                     )
                 },
             )
@@ -263,7 +296,7 @@ private fun CheckoutContent(
 
             // --- Payment Method Selection ---
             Text(
-                text = "გადახდის მეთოდი",
+                text = stringResource(Res.string.checkout_payment_method),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.extended.textPrimary,
                 modifier = Modifier.padding(bottom = 12.dp, start = 4.dp)
@@ -297,6 +330,22 @@ private fun CheckoutContent(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Digital-goods purchase consent (EU consumer law). Links the Terms and
+            // states the withdrawal-right waiver mirroring Terms §9. Sits directly
+            // above the Pay button so it is seen before purchase.
+            LegalConsentText(
+                template = stringResource(CoreRes.string.legal_consent_checkout),
+                links = listOf(
+                    LegalLink(
+                        label = stringResource(CoreRes.string.legal_terms_of_service),
+                        url = LegalLinks.TERMS_OF_SERVICE
+                    ),
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            )
+
             // --- Dynamic Payment Button (non-sticky, end of scroll) ---
             PaymentButton(
                 selectedMethod = state.selectedPaymentMethod,
@@ -328,7 +377,7 @@ private fun CheckoutContent(
  * Renders a SINGLE primary button whose label changes based on the selected payment method.
  *
  * - [PaymentMethod.NATIVE_WALLET] + available -> "Pay with Google Pay" / "Pay with Apple Pay"
- * - [PaymentMethod.CARD] (or wallet unavailable) -> "გაგრძელება" (Continue)
+ * - [PaymentMethod.CARD] (or wallet unavailable) -> Continue (localized via action_continue)
  */
 /**
  * Renders either the branded native wallet button (Google Pay / Apple Pay)
@@ -359,12 +408,14 @@ private fun PaymentButton(
                 .height(48.dp)
         )
     } else {
-        // Standard Celvo button for card payments
+        // Card payments — same primary purple style as the "Claim promo" button.
         CelvoButton(
-            text = "Continue", // "Continue" — redirects to BOG payment page
+            text = stringResource(Res.string.action_continue),
             onClick = onPayClick,
             modifier = Modifier.fillMaxWidth(),
-            isLoading = isLoading
+            isLoading = isLoading,
+            containerColor = CelvoPurple300,
+            contentColor = CelvoDark900
         )
     }
 }
@@ -496,12 +547,13 @@ fun PromoCodeCard(promoCode: String?, onClick: () -> Unit) {
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "პრომოკოდი",
+                    text = stringResource(Res.string.checkout_promo_code_label),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.extended.textSecondary
                 )
                 Text(
-                    text = promoCode?.takeIf { it.isNotEmpty() } ?: "შეიყვანეთ კოდი",
+                    text = promoCode?.takeIf { it.isNotEmpty() }
+                        ?: stringResource(Res.string.enter_code),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                     color = if (!promoCode.isNullOrEmpty()) {
                         MaterialTheme.colorScheme.extended.textPrimary
@@ -523,25 +575,33 @@ fun PromoCodeCard(promoCode: String?, onClick: () -> Unit) {
 fun OrderSummary(price: Double, discount: Double, promoDiscount: Double, currencySymbol: String) {
     val total = (price - discount - promoDiscount).coerceAtLeast(0.0)
     Column(modifier = Modifier.fillMaxWidth()) {
-        SummaryRow("პაკეტის საფასური", "${formatPrice(price)}$currencySymbol", isTotal = false)
+        SummaryRow(
+            label = stringResource(Res.string.checkout_package_price),
+            value = "$currencySymbol ${formatPrice(price)}",
+            isTotal = false
+        )
         if (discount > 0) {
             SummaryRow(
-                label = "ფასდაკლება",
-                value = "-${formatPrice(discount)}$currencySymbol",
+                label = stringResource(Res.string.checkout_discount),
+                value = "-$currencySymbol ${formatPrice(discount)}",
                 valueColor = CelvoPurple500,
                 isTotal = false
             )
         }
         if (promoDiscount > 0) {
             SummaryRow(
-                label = "პრომოკოდი",
-                value = "-${formatPrice(promoDiscount)}$currencySymbol",
+                label = stringResource(Res.string.checkout_promo_code_label),
+                value = "-$currencySymbol ${formatPrice(promoDiscount)}",
                 valueColor = MaterialTheme.colorScheme.extended.destructive,
                 isTotal = false
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
-        SummaryRow("ჯამური თანხა", "${formatPrice(total)}$currencySymbol", isTotal = true)
+        SummaryRow(
+            label = stringResource(Res.string.checkout_total),
+            value = "$currencySymbol ${formatPrice(total)}",
+            isTotal = true
+        )
     }
 }
 
@@ -579,7 +639,7 @@ fun CheckoutHeader(onClose: () -> Unit) {
             modifier = Modifier.align(Alignment.CenterStart)
         )
         Text(
-            text = "ყიდვა",
+            text = stringResource(Res.string.checkout_title),
             modifier = Modifier.align(Alignment.Center),
             color = MaterialTheme.colorScheme.extended.textPrimary,
             style = TextStyle(
@@ -610,7 +670,7 @@ fun ValidityStartInfoBox() {
             tint = CelvoPurple500
         )
         Text(
-            text = "მოქმედების ვადა დაიწყება eSIM-ის ქსელთან დაკავშირების მომენტიდან.",
+            text = stringResource(Res.string.checkout_validity_info),
             style = MaterialTheme.typography.bodySmall.copy(lineHeight = 18.sp),
             color = MaterialTheme.colorScheme.extended.textPrimary
         )

@@ -11,9 +11,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import celvo.feature.profile.generated.resources.Res
+import celvo.feature.profile.generated.resources.language_name_english
+import celvo.feature.profile.generated.resources.language_name_georgian
+import celvo.feature.profile.generated.resources.language_screen_title
 import com.mtislab.celvo.feature.profile.presentation.settings.components.SettingsOptionItem
 import com.mtislab.core.designsystem.components.cards.CelvoCard
 import com.mtislab.core.designsystem.components.headers.CelvoDetailHeader
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -26,7 +31,10 @@ fun LanguageScreen(
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            CelvoDetailHeader(title = "ენა", onBackClick = onBackClick)
+            CelvoDetailHeader(
+                title = stringResource(Res.string.language_screen_title),
+                onBackClick = onBackClick
+            )
         }
     ) { padding ->
         Column(
@@ -37,9 +45,9 @@ fun LanguageScreen(
         ) {
             CelvoCard(contentPadding = PaddingValues(0.dp)) {
                 val languages = viewModel.availableLanguages
-                languages.forEachIndexed { index, (code, name) ->
+                languages.forEachIndexed { index, code ->
                     SettingsOptionItem(
-                        text = name,
+                        text = languageDisplayName(code),
                         isSelected = state.currentLanguage == code,
                         onClick = { viewModel.onLanguageSelect(code) },
                         showDivider = index != languages.lastIndex
@@ -48,4 +56,11 @@ fun LanguageScreen(
             }
         }
     }
+}
+
+@Composable
+private fun languageDisplayName(code: String): String = when (code) {
+    "en" -> stringResource(Res.string.language_name_english)
+    "ka" -> stringResource(Res.string.language_name_georgian)
+    else -> code
 }

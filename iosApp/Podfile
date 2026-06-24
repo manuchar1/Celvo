@@ -1,0 +1,10 @@
+source 'https://cdn.cocoapods.org'
+
+platform :ios, '14.0'
+
+target 'iosApp' do
+  use_frameworks!
+
+  pod 'designsystem', :path => '../core/designsystem'
+  pod 'GoogleSignIn', '~> 9.1.0'
+end

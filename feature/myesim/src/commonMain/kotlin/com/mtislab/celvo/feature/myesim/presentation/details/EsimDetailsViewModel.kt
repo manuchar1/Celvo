@@ -5,8 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.mtislab.celvo.feature.myesim.domain.repository.MyEsimRepository
+import com.mtislab.core.domain.connectivity.ConnectivityObserver
+import com.mtislab.core.domain.connectivity.onBackOnline
 import com.mtislab.core.domain.model.Route
 import com.mtislab.core.domain.utils.Resource
+import com.mtislab.core.domain.utils.isConnectivityError
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,7 +21,8 @@ import kotlinx.coroutines.launch
 
 class EsimDetailsViewModel(
     savedStateHandle: SavedStateHandle,
-    private val repository: MyEsimRepository
+    private val repository: MyEsimRepository,
+    private val connectivityObserver: ConnectivityObserver
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(EsimDetailsState())
@@ -42,6 +46,10 @@ class EsimDetailsViewModel(
             started = SharingStarted.WhileSubscribed(5000L),
             initialValue = _state.value
         )
+
+    init {
+        observeConnectivity()
+    }
 
     fun onAction(action: EsimDetailsAction) {
         when (action) {
@@ -106,6 +114,20 @@ class EsimDetailsViewModel(
                     }
                     _events.send(EsimDetailsEvent.ShowError("Failed to load bundles"))
                 }
+            }
+        }
+    }
+
+    /**
+     * Auto-recovers from a no-internet failure: when connectivity returns while
+     * the screen is still showing a connectivity error, the bundles are
+     * reloaded so the placeholder gives way to content. A server error is left
+     * untouched — the fox placeholder carries its own manual retry.
+     */
+    private fun observeConnectivity() {
+        connectivityObserver.onBackOnline(viewModelScope) {
+            if (_state.value.bundlesError?.isConnectivityError == true) {
+                loadBundles(isRefresh = false)
             }
         }
     }

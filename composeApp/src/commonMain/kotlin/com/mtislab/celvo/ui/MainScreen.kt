@@ -11,12 +11,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -37,7 +40,7 @@ import com.mtislab.celvo.feature.store.presentation.checkout.CheckoutScreenRoot
 import com.mtislab.celvo.feature.store.presentation.packages.PackagesScreenRoot
 import com.mtislab.celvo.feature.store.presentation.verification.PaymentVerificationScreenRoot
 import com.mtislab.celvo.feature.store.presentation.search.SearchRoot
-import com.mtislab.core.designsystem.components.screens.OfflineInstructionsScreen
+import com.mtislab.core.designsystem.components.screens.InstallInstructionsScreen
 import com.mtislab.celvo.feature.store.presentation.store.StoreScreenRoot
 import com.mtislab.celvo.navigation.bottomNavRoutes
 import com.mtislab.celvo.ui.components.CelvoBottomBar
@@ -73,6 +76,14 @@ val SearchTabType = object : NavType<Route.SearchTab>(isNullableAllowed = false)
         return value.name
     }
 }
+
+/**
+ * Set to `true` by the iOS host so the bottom navigation renders as a floating
+ * "Liquid Glass" layer — app content then runs edge-to-edge *beneath* the bar
+ * and refracts through it. Stays `false` on Android / desktop, where the bar
+ * docks in the layout and content is inset above it.
+ */
+val LocalCelvoNavBarFloating = staticCompositionLocalOf { false }
 
 @Composable
 fun MainScreenRoot(
@@ -141,6 +152,14 @@ fun MainScreenScreen(
         currentDestination?.hasRoute(it.route::class) == true
     }
 
+    // Serialized route string used by CelvoBottomBar for selection matching.
+    // Compose Navigation emits the qualified class name for data-object
+    // routes (e.g. "com.mtislab.core.domain.model.Route.Home").
+    val currentRoute = currentDestination?.route
+
+    // iOS floats the nav bar as a Liquid Glass layer; content flows beneath it.
+    val navBarFloatsOverContent = LocalCelvoNavBarFloating.current
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -152,8 +171,19 @@ fun MainScreenScreen(
             bottomBar = {
                 if (showBottomBar) {
                     CelvoBottomBar(
-                        navController = navController,
-                        currentDestination = currentDestination
+                        destinations = bottomNavRoutes,
+                        currentRoute = currentRoute,
+                        onNavigate = { item ->
+                            navController.navigate(item.route) {
+                                // Preserve nested back-stacks per tab and
+                                // collapse re-taps to a no-op.
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
                     )
                 }
             }
@@ -163,7 +193,10 @@ fun MainScreenScreen(
                 startDestination = Route.Home,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = innerPadding.calculateBottomPadding())
+                    .padding(
+                        bottom = if (navBarFloatsOverContent) 0.dp
+                        else innerPadding.calculateBottomPadding()
+                    )
             ) {
 
                 // ── Auth Graph ─────────────────────────────────────────────────────────
@@ -204,6 +237,15 @@ fun MainScreenScreen(
                         },
                         onNavigateToSearch = { tab, focus ->
                             navController.navigate(Route.Search(initialTab = tab, focusSearch = focus))
+                        },
+                        onNavigateToMyEsim = {
+                            navController.navigate(Route.MyEsim) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         },
                         onViewInstructionsClick = {
                             navController.navigate(Route.OfflineInstructions)
@@ -254,16 +296,29 @@ fun MainScreenScreen(
                 composable<Route.PaymentVerification> {
                     PaymentVerificationScreenRoot(
                         onNavigateToHome = {
-                            navController.navigate(Route.Home) {
-                                popUpTo(Route.Home) { inclusive = true }
+                            // Home is the start destination and already sits at
+                            // the bottom of the stack (deeplink/checkout pushed
+                            // PaymentVerification on top with popUpTo(Home)).
+                            // Pop directly to Home — the tab-switching pattern
+                            // (popUpTo start + launchSingleTop) silently no-ops
+                            // when navigating to the destination already below
+                            // the current one.
+                            if (!navController.popBackStack(Route.Home, inclusive = false)) {
+                                navController.navigate(Route.Home) {
+                                    popUpTo<Route.Home> { inclusive = true }
+                                    launchSingleTop = true
+                                }
                             }
                         },
                         onNavigateToMyEsims = {
                             navController.navigate(Route.MyEsim) {
-                                popUpTo(Route.Home)
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                        },
-                        onLaunchEsimInstall = { /* Platform-specific eSIM install resolution */ }
+                        }
                     )
                 }
 
@@ -290,6 +345,7 @@ fun MainScreenScreen(
                     SearchRoot(
                         initialTab = args.initialTab,
                         focusSearch = args.focusSearch,
+                        filterIsoCodes = args.filterIsoCodes,
                         onBackClick = { navController.popBackStack() },
                         onNavigateToDetails = { isoCode, countryName, type ->
                             navController.navigate(Route.Packages(isoCode, countryName, type))
@@ -316,7 +372,47 @@ fun MainScreenScreen(
                             onAddEsimClick = {
                                 navController.navigate(Route.Search(initialTab = SearchTab.COUNTRY, focusSearch = false))
                             },
-                            onTopUpClick = {}
+                            onTopUpClick = { esim ->
+                                val countries = esim.supportedCountries
+                                // A real single-country eSIM has exactly 1 entry with a 2-letter ISO code
+                                val isSingleCountry = countries.size == 1 &&
+                                        countries.first().isoCode.length == 2 &&
+                                        countries.first().isoCode.all { it.isLetter() }
+                                // Regional eSIM: has a non-ISO isoCode (e.g. "EUROPE EXTRA")
+                                val isRegional = countries.any { it.isoCode.length != 2 || !it.isoCode.all { c -> c.isLetter() } }
+
+                                when {
+                                    isSingleCountry -> {
+                                        // Single country — go directly to packages
+                                        val country = countries.first()
+                                        navController.navigate(
+                                            Route.Packages(
+                                                isoCode = country.isoCode,
+                                                countryName = esim.userLabel,
+                                                type = "COUNTRY"
+                                            )
+                                        )
+                                    }
+                                    isRegional -> {
+                                        // Regional package — go to search with Region tab
+                                        navController.navigate(
+                                            Route.Search(
+                                                initialTab = SearchTab.REGION,
+                                                focusSearch = false
+                                            )
+                                        )
+                                    }
+                                    else -> {
+                                        // Multi-country eSIM — go to search with Country tab
+                                        navController.navigate(
+                                            Route.Search(
+                                                initialTab = SearchTab.COUNTRY,
+                                                focusSearch = false
+                                            )
+                                        )
+                                    }
+                                }
+                            }
                         )
                     }
                 }
@@ -356,7 +452,7 @@ fun MainScreenScreen(
 
                 // ── Offline Instructions ─────────────────────────────────────────────
                 composable<Route.OfflineInstructions> {
-                    OfflineInstructionsScreen(
+                    InstallInstructionsScreen(
                         onBackClick = { navController.popBackStack() }
                     )
                 }

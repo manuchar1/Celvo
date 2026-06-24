@@ -22,21 +22,15 @@ import androidx.compose.ui.unit.dp
 import com.mtislab.celvo.feature.store.domain.model.MarketingBanner
 
 /**
- * Carousel that renders both standard and interactive banners.
+ * Carousel of informational marketing banners.
  *
- * Routing logic uses [MarketingBanner.isInteractive] (derived from `promoCode != null`)
- * to determine which composable is rendered. The `isClaimed` flag on each banner
- * is already merged by the ViewModel — no additional state needed here.
- *
- * @param banners List of banners with claimed state pre-merged by ViewModel.
- * @param onBannerClick Deep link handler for standard (non-interactive) banners.
- * @param onClaimPromo Claim handler for interactive promo banners.
+ * @param banners Banners to display.
+ * @param onBannerClick Deep link handler invoked when a banner is tapped.
  */
 @Composable
 fun MarketingBannerCarousel(
     banners: List<MarketingBanner>,
     onBannerClick: (deepLink: String) -> Unit,
-    onClaimPromo: (banner: MarketingBanner) -> Unit,
 ) {
     if (banners.isEmpty()) return
 
@@ -52,19 +46,10 @@ fun MarketingBannerCarousel(
             pageSpacing = 12.dp,
             modifier = Modifier.fillMaxWidth(),
         ) { page ->
-            val banner = banners[page]
-
-            if (banner.isInteractive) {
-                InteractivePromoBanner(
-                    banner = banner,
-                    onClaimClick = { onClaimPromo(banner) },
-                )
-            } else {
-                MarketingBannerItem(
-                    banner = banner,
-                    onBannerClick = onBannerClick,
-                )
-            }
+            MarketingBannerItem(
+                banner = banners[page],
+                onBannerClick = onBannerClick,
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))

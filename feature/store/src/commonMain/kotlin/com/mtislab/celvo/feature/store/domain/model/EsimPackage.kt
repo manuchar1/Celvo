@@ -16,6 +16,13 @@ data class EsimPackage(
     val isoCode: String,
     val originalPrice: Double?,
     val discountPercent: Int?,
-    val operators: List<PackageOperator>
+    val operators: List<PackageOperator>,
+    val description: String? = null,
+    val networkTypes: List<String> = emptyList(),
+    val is5G: Boolean = false,
+    val coverageCountries: List<String> = emptyList(),
+    val coverageCount: Int = 0,
+    val planTier: String? = null,
+    val badgeText: String? = null,
+    val badgeColor: String? = null
 )
-

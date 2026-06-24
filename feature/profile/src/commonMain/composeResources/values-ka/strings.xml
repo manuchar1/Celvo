@@ -13,4 +13,31 @@
     <string name="section_regional_plans">რეგიონალური პაკეტები</string>
     <string name="action_retry">სცადეთ თავიდან</string>
     <string name="action_see_all">მეტის ნახვა</string>
+
+    <string name="profile_title">პროფილი</string>
+    <string name="profile_dark_mode">მუქი რეჟიმი</string>
+    <string name="profile_log_out">გამოსვლა</string>
+    <string name="profile_logout_confirmation">ნამდვილად გსურთ აპლიკაციიდან\nგამოსვლა?</string>
+    <string name="profile_logout_confirm">დიახ, მსურს</string>
+    <string name="profile_logout_dismiss">ახლა არა</string>
+    <string name="theme_on">ჩართულია</string>
+    <string name="theme_off">გამორთულია</string>
+    <string name="theme_system_default">ავტომატური</string>
+
+    <!-- Language settings -->
+    <string name="language_screen_title">ენა</string>
+    <string name="language_name_english">English</string>
+    <string name="language_name_georgian">ქართული</string>
+
+    <!-- Delete Account -->
+    <string name="profile_delete_account_trigger">ანგარიშის წაშლა</string>
+    <string name="profile_delete_account_dialog_title">გსურთ ანგარიშის წაშლა?</string>
+    <string name="profile_delete_account_dialog_warning">ეს ქმედება შეუქცევადია და ვერ აღდგება.</string>
+    <string name="profile_delete_account_dialog_consequence">გთხოვთ გაითვალისწინოთ: ანგარიშის წაშლის შემდეგ თქვენ ვერ მიიღებთ წვდომას თქვენს eSim-ის ინფორმაციაზე, აქციებსა და ქულებზე.</string>
+    <string name="profile_delete_account_dialog_cancel">გაუქმება</string>
+    <string name="profile_delete_account_dialog_confirm">ანგარიშის წაშლა</string>
+    <string name="profile_delete_account_success">თქვენი ანგარიში წაიშალა.</string>
+    <string name="profile_delete_account_error_generic">ანგარიშის წაშლა ვერ მოხერხდა. გთხოვთ, სცადეთ თავიდან.</string>
+    <string name="profile_delete_account_error_session">თქვენი სესია ამოიწურა. გთხოვთ, შეხვიდეთ თავიდან.</string>
+    <string name="profile_delete_account_error_partial">თქვენი მონაცემები წაიშალა, თუმცა აუთენტიფიკაციის სერვისი დროებით მიუწვდომელია. გთხოვთ, გამოხვიდეთ — ჩვენი გუნდი დაასრულებს გასუფთავებას.</string>
 </resources>

@@ -1,6 +1,5 @@
 package com.mtislab.celvo.feature.store.presentation.store
 
-import com.mtislab.celvo.feature.store.domain.model.MarketingBanner
 import com.mtislab.celvo.feature.store.domain.model.StoreItem
 
 sealed interface StoreAction {
@@ -22,17 +21,4 @@ sealed interface StoreAction {
     data object OnDetailsClick : StoreAction
     data object OnSupportClick : StoreAction
     data object OnRetryLoadPackages : StoreAction
-
-    /**
-     * User tapped "Claim" CTA on an interactive promo banner.
-     * The banner carries its own [MarketingBanner.promoCode] —
-     * the ViewModel reads it from the banner object and persists
-     * the claim via [PromoClaimRepository].
-     */
-    data class ClaimBannerPromo(val banner: MarketingBanner) : StoreAction
-
-    // DEPRECATED: Replaced by ClaimBannerPromo. Kept temporarily to avoid
-    // breaking compilation in other files. Remove once all references are updated.
-    @Deprecated("Use ClaimBannerPromo instead", ReplaceWith("ClaimBannerPromo(banner)"))
-    data class OnClaimPromoCode(val code: String) : StoreAction
 }

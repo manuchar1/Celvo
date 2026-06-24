@@ -1,5 +1,6 @@
 package com.mtislab.celvo.feature.store.presentation.store
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,17 +45,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import celvo.feature.store.generated.resources.Res
 import celvo.feature.store.generated.resources.action_retry
 import celvo.feature.store.generated.resources.action_see_all
+import celvo.feature.store.generated.resources.gauge_syncing
+import celvo.feature.store.generated.resources.home_data_stale_warning
 import celvo.feature.store.generated.resources.packages_loading
 import celvo.feature.store.generated.resources.packages_load_failed
 import celvo.feature.store.generated.resources.add_data
@@ -62,7 +68,10 @@ import celvo.feature.store.generated.resources.install
 import celvo.feature.store.generated.resources.my_plans
 import celvo.feature.store.generated.resources.section_popular_countries
 import celvo.feature.store.generated.resources.section_popular_regions
+import celvo.feature.store.generated.resources.esim_label
 import celvo.feature.store.generated.resources.select_esim
+import celvo.feature.store.generated.resources.store_error_load_failed
+import celvo.feature.store.generated.resources.store_error_title
 import com.celvo.core.designsystem.resources.ic_arrow_down
 import com.celvo.core.designsystem.resources.ic_download
 import com.celvo.core.designsystem.resources.ic_log_in
@@ -73,21 +82,25 @@ import com.celvo.core.designsystem.resources.ic_sim_card
 import com.celvo.core.designsystem.resources.ic_top_up
 import com.celvo.core.designsystem.resources.search
 import com.celvo.core.designsystem.resources.search_placeholder
+import com.mtislab.celvo.feature.store.data.mapper.toBundleDisplay
 import com.mtislab.celvo.feature.store.presentation.components.MarketingBannerCarousel
 import com.mtislab.core.designsystem.components.buttons.CelvoChipButton
 import com.mtislab.core.designsystem.components.buttons.CelvoCircleButton
-import com.mtislab.core.designsystem.components.placeholders.CelvoNoInternetPlaceholder
+import com.mtislab.core.designsystem.components.placeholders.CelvoErrorState
+import com.mtislab.core.designsystem.components.bundles.ThrottleDisclosure
 import com.mtislab.core.designsystem.components.cards.CelvoCard
 import com.mtislab.core.designsystem.components.indicators.CelvoUsageGauge
 import com.mtislab.core.designsystem.components.items.CelvoRegionItem
-import com.mtislab.core.designsystem.components.notifications.CelvoNotificationData
-import com.mtislab.core.designsystem.components.notifications.CelvoNotificationType
-import com.mtislab.core.designsystem.components.notifications.LocalCelvoNotification
+import com.mtislab.core.designsystem.theme.PlusJakartaSans
 import com.mtislab.core.designsystem.theme.extended
 import com.mtislab.core.designsystem.theme.titleXSmall
+import com.mtislab.core.designsystem.utils.getRegionIcon
 import com.mtislab.core.domain.model.EsimHomePackage
+import com.mtislab.core.domain.model.PackageStatus
 import com.mtislab.core.domain.model.Route
 import com.mtislab.core.domain.model.UserEsim
+import com.mtislab.core.designsystem.theme.CelvoGreen500Alpha15
+import com.mtislab.core.designsystem.theme.CelvoPurple500Alpha15
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -100,44 +113,12 @@ fun StoreScreenRoot(
     onNavigateToDetails: (String, String, String) -> Unit,
     onNavigateToLogin: () -> Unit,
     onNavigateToSearch: (Route.SearchTab, Boolean) -> Unit,
+    onNavigateToMyEsim: () -> Unit,
     onViewInstructionsClick: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    val notificationState = LocalCelvoNotification.current
-
     val uriHandler = LocalUriHandler.current
-
-
-
-    LaunchedEffect(Unit) {
-
- /*       notificationState.show(
-            CelvoNotificationData(
-                message = "პრომოკოდი გააქტიურდა",
-                description = "კოდი: ${2233}",
-                type = CelvoNotificationType.Success,
-                durationMillis = 8000L,
-            )
-        )*/
-
-        viewModel.events.collect { event ->
-
-            when (event) {
-                is StoreEvent.PromoClaimSuccess -> {
-                    notificationState.show(
-                        CelvoNotificationData(
-                            message = event.message,
-                            description = "კოდი: ${event.code}",
-                            type = CelvoNotificationType.Success,
-                            durationMillis = 4000L,
-                        )
-                    )
-                }
-            }
-        }
-    }
-
 
     // ── Collect one-shot URL events ──────────────────────────────────────
     // LocalUriHandler is the correct Compose Multiplatform abstraction for
@@ -183,6 +164,37 @@ fun StoreScreenRoot(
                     Route.SearchTab.COUNTRY, true
                 )
 
+                // Banner tap — TEMPORARY: open the Search page (browse
+                // destinations) for both STORE and POST_PURCHASE placements,
+                // which share this carousel. Deep-link routing (action.deepLink)
+                // is intentionally ignored until banner deep links are wired up.
+                is StoreAction.OnBannerClick -> onNavigateToSearch(
+                    Route.SearchTab.COUNTRY, false
+                )
+
+                // "My plans" — jump to the My eSIM tab.
+                is StoreAction.OnDetailsClick -> onNavigateToMyEsim()
+
+                // "Add data" — open the package list for the selected eSIM's
+                // country; fall back to country search when it can't be resolved.
+                is StoreAction.OnTopUpClick -> {
+                    val esim = (state as? StoreState.Content)?.selectedEsim
+                    val isoCode = (esim?.primaryCountryCode ?: esim?.activeBundle?.countryCode)
+                        ?.takeIf { it.length == 2 && it.all(Char::isLetter) }
+                    if (esim != null && isoCode != null) {
+                        onNavigateToDetails(
+                            isoCode,
+                            esim.activeBundle?.countryName ?: esim.displayName,
+                            "COUNTRY",
+                        )
+                    } else {
+                        onNavigateToSearch(Route.SearchTab.COUNTRY, false)
+                    }
+                }
+
+                // Help "?" — open the platform-specific install guide.
+                is StoreAction.OnSupportClick -> onViewInstructionsClick()
+
                 else -> Unit
             }
         },
@@ -217,8 +229,12 @@ fun StoreScreen(
                 }
 
                 is StoreState.Error -> {
-                    CelvoNoInternetPlaceholder(
-                        onRetryClick = { onAction(StoreAction.OnRetry) },
+                    CelvoErrorState(
+                        error = state.error,
+                        onRetry = { onAction(StoreAction.OnRetry) },
+                        serverErrorTitle = stringResource(Res.string.store_error_title),
+                        serverErrorMessage = stringResource(Res.string.store_error_load_failed),
+                        serverErrorActionLabel = stringResource(Res.string.action_retry),
                         onViewInstructionsClick = onViewInstructionsClick
                     )
                 }
@@ -279,13 +295,22 @@ private fun HomeContent(
         }
 
         // ── 2. eSIM Section (Gauge Carousel + Actions) ──────────────────
+        // Skip rendering when the selected eSIM has no ACTIVE/QUEUED packages
+        // and we're not loading/erroring. Otherwise the gauge area collapses
+        // to nothing while the action buttons (Add data / My plans) still imply
+        // a non-existent plan.
         val selectedEsim = state.selectedEsim
-        if (state.isLoggedIn && selectedEsim != null) {
+        val hasDisplayablePackage = selectedEsim?.packages?.any {
+            it.packageStatus == PackageStatus.ACTIVE || it.packageStatus == PackageStatus.QUEUED
+        } == true
+        if (state.isLoggedIn && selectedEsim != null &&
+            (state.isLoadingPackages || state.packagesError != null || hasDisplayablePackage)
+        ) {
             item(key = "esim_section_${selectedEsim.iccid}") {
 
                 EsimSection(
                     esim = selectedEsim,
-                    isDataStale = state.isDataStale,
+                    isDataStale = !selectedEsim.dataLive,
                     isLoadingPackages = state.isLoadingPackages,
                     packagesError = state.packagesError,
                     onRetryLoadPackages = { onAction(StoreAction.OnRetryLoadPackages) },
@@ -314,10 +339,6 @@ private fun HomeContent(
                     banners = state.marketingBanners,
                     onBannerClick = { deepLink ->
                         onAction(StoreAction.OnBannerClick(deepLink))
-                    },
-                    // CHANGED: passes the full banner object instead of a code string
-                    onClaimPromo = { banner ->
-                        onAction(StoreAction.ClaimBannerPromo(banner))
                     },
                 )
             }
@@ -494,7 +515,12 @@ private fun EsimSection(
     onSupportClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val packages = esim.packages
+    // Home carousel shows only bundles the user actively cares about:
+    // currently consuming data (ACTIVE) or waiting in line (QUEUED).
+    // Terminal states (EXPIRED / DEPLETED) live on the Details screen.
+    val packages = esim.packages.filter {
+        it.packageStatus == PackageStatus.ACTIVE || it.packageStatus == PackageStatus.QUEUED
+    }
 
 
     Column(
@@ -524,6 +550,7 @@ private fun EsimSection(
 
                 HorizontalPager(
                     state = pagerState,
+                    key = { page -> packages[page].assignmentId.raw },
                     modifier = Modifier.fillMaxWidth()
                 ) { page ->
                     PackageGaugePage(pkg = packages[page])
@@ -556,7 +583,7 @@ private fun EsimSection(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "მონაცემები შესაძლოა მოძველებული იყოს",
+                    text = stringResource(Res.string.home_data_stale_warning),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline
                 )
@@ -567,7 +594,7 @@ private fun EsimSection(
 
         // ── Action Buttons ───────────────────────────────────────────────
         EsimActionButtons(
-            isInstalled = esim.installed,
+            isInstalled = esim.isEffectivelyInstalled,
             onInstallClick = onInstallClick,
             onTopUpClick = onTopUpClick,
             onDetailsClick = onDetailsClick,
@@ -585,27 +612,129 @@ private fun EsimSection(
 private fun PackageGaugePage(
     pkg: EsimHomePackage
 ) {
-    val initialGb = pkg.initialBytes.toFloat() / 1.0737418E9f
-    val remainingGb = pkg.remainingBytes?.toFloat()?.div(1.0737418E9f)
+    val display = pkg.toBundleDisplay()
 
-    if (remainingGb != null) {
+    // Metered bundles depend on usage bytes being synced from the server;
+    // unlimited bundles don't, so the skeleton applies only to the metered case.
+    if (!display.isUnlimited && (pkg.remainingBytes == null || pkg.remainingFormatted == null)) {
+        PackageGaugeSyncing(modifier = Modifier.fillMaxWidth())
+        return
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         CelvoUsageGauge(
-            usedAmount = remainingGb,
-            totalAmount = initialGb,
-            unit = "GB",
-            flagUrl = pkg.flagUrl,
+            progress = display.gaugeFillFraction,
+            primaryText = display.primaryAmountLabel,
+            secondaryText = display.secondaryAmountLabel.orEmpty(),
+            isUnlimited = display.isUnlimited,
             modifier = Modifier.fillMaxWidth(),
             primaryColor = MaterialTheme.colorScheme.primary,
+            flag = { PackageFlag(pkg = pkg) },
+            bottomContent = { PackageStatusBadge(pkg = pkg) }
+        )
+
+        display.throttle?.let { terms ->
+            Spacer(modifier = Modifier.height(16.dp))
+            ThrottleDisclosure(
+                terms = terms,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun PackageFlag(
+    pkg: EsimHomePackage
+) {
+    val flagUrl = pkg.flagUrl
+    if (!flagUrl.isNullOrEmpty()) {
+        AsyncImage(
+            model = flagUrl,
+            contentDescription = pkg.countryName ?: pkg.displayName,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
         )
     } else {
-        // Nullable remainingBytes → sync failed, show indeterminate gauge
-        CelvoUsageGauge(
-            usedAmount = 0f,
-            totalAmount = initialGb,
-            unit = "GB",
-            flagUrl = pkg.flagUrl,
-            modifier = Modifier.fillMaxWidth(),
-            primaryColor = MaterialTheme.colorScheme.surfaceVariant,
+        // Regional / global bundles ship without a country flag — fall back to
+        // the local region glyph keyed by country/region identifier.
+        val regionKey = pkg.countryName ?: pkg.countryCode ?: ""
+        Image(
+            painter = painterResource(getRegionIcon(regionKey)),
+            contentDescription = pkg.countryName ?: pkg.displayName,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        )
+    }
+}
+
+@Composable
+private fun PackageGaugeSyncing(
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .height(140.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(32.dp),
+                color = MaterialTheme.colorScheme.primary,
+                strokeWidth = 3.dp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = stringResource(Res.string.gauge_syncing),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Package status badge — small pill showing Active / Queued state per page.
+// Uses the same palette as the badge on the My eSIM list card for consistency.
+// ═════════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun PackageStatusBadge(
+    pkg: EsimHomePackage,
+    modifier: Modifier = Modifier
+) {
+    val colors = MaterialTheme.colorScheme.extended
+    val (textColor, backgroundColor) = when (pkg.packageStatus) {
+        PackageStatus.ACTIVE -> colors.success to CelvoGreen500Alpha15
+        PackageStatus.QUEUED -> colors.textLink to CelvoPurple500Alpha15
+        else -> colors.textSecondary to colors.inputBackground
+    }
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(backgroundColor)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Text(
+            text = pkg.packageStatusDisplay,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = PlusJakartaSans,
+                fontWeight = FontWeight.Medium,
+                fontSize = 12.sp
+            ),
+            color = textColor
         )
     }
 }
@@ -785,8 +914,9 @@ private fun EsimSwitcherSheet(
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 32.dp)
         ) {
+            val titleRes = if (esims.size == 1) Res.string.esim_label else Res.string.select_esim
             Text(
-                text = stringResource(Res.string.select_esim),
+                text = stringResource(titleRes),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 16.dp)

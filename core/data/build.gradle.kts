@@ -30,6 +30,9 @@ kotlin {
                 implementation(libs.koin.android)
                 implementation(libs.google.pay.wallet)
                 implementation(libs.kotlinx.coroutines.play.services)
+                // For Google Pay config (single source of truth shared with the
+                // Compose PayButton launcher). Scoped to androidMain only.
+                implementation(projects.core.designsystem)
             }
         }
 

@@ -28,6 +28,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import celvo.feature.store.generated.resources.Res
 import celvo.feature.store.generated.resources.mascot_fox_no_results
+import celvo.feature.store.generated.resources.search_clear
+import celvo.feature.store.generated.resources.search_no_results
+import celvo.feature.store.generated.resources.search_no_results_desc
+import celvo.feature.store.generated.resources.tab_country
+import celvo.feature.store.generated.resources.tab_region
 import com.celvo.core.designsystem.resources.ic_cancel
 import com.celvo.core.designsystem.resources.search_placeholder
 import com.mtislab.core.designsystem.components.buttons.CelvoActionIconButton
@@ -48,7 +53,8 @@ fun SearchRoot(
     focusSearch: Boolean,
     onBackClick: () -> Unit,
     onNavigateToDetails: (String, String, String) -> Unit,
-    viewModel: SearchViewModel = koinViewModel { parametersOf(initialTab, focusSearch) }
+    filterIsoCodes: String = "",
+    viewModel: SearchViewModel = koinViewModel(key = "$initialTab-$focusSearch-$filterIsoCodes") { parametersOf(initialTab, focusSearch, filterIsoCodes) }
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -117,7 +123,7 @@ fun SearchScreen(
 
         // --- Tabs ---
         CelvoTabSwitcher(
-            options = listOf("ქვეყანა", "რეგიონი"), // TODO: Localize
+            options = listOf(stringResource(Res.string.tab_country), stringResource(Res.string.tab_region)),
             selectedIndex = state.selectedTab.ordinal,
             onOptionSelected = { index ->
                 val tab = Route.SearchTab.entries.getOrElse(index) { Route.SearchTab.COUNTRY }
@@ -143,9 +149,9 @@ fun SearchScreen(
 
             CelvoPlaceholder(
                 icon = Res.drawable.mascot_fox_no_results,
-                title = "შედეგები ვერ მოიძებნა",
-                message = "მითითებული სიტყვით ვერ მოიძებნა ვერაფერი.",
-                actionLabel = "გასუფთავება",
+                title = stringResource(Res.string.search_no_results),
+                message = stringResource(Res.string.search_no_results_desc, state.query),
+                actionLabel = stringResource(Res.string.search_clear),
                 onActionClick = { onAction(SearchAction.OnClearQuery) }
             )
         } else {

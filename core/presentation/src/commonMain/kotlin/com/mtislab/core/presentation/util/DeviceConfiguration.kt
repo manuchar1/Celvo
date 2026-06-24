@@ -28,12 +28,16 @@ enum class DeviceConfiguration {
                 when {
                     minWidthDp < WIDTH_DP_MEDIUM_LOWER_BOUND &&
                             minHeightDp >= HEIGHT_DP_MEDIUM_LOWER_BOUND -> MOBILE_PORTRAIT
+
                     minWidthDp >= WIDTH_DP_EXPANDED_LOWER_BOUND &&
                             minHeightDp < HEIGHT_DP_MEDIUM_LOWER_BOUND -> MOBILE_LANDSCAPE
+
                     minWidthDp in WIDTH_DP_MEDIUM_LOWER_BOUND..WIDTH_DP_EXPANDED_LOWER_BOUND &&
                             minHeightDp >= HEIGHT_DP_EXPANDED_LOWER_BOUND -> TABLET_PORTRAIT
+
                     minWidthDp >= WIDTH_DP_EXPANDED_LOWER_BOUND &&
                             minHeightDp in HEIGHT_DP_MEDIUM_LOWER_BOUND..HEIGHT_DP_EXPANDED_LOWER_BOUND -> TABLET_LANDSCAPE
+
                     else -> DESKTOP
                 }
             }

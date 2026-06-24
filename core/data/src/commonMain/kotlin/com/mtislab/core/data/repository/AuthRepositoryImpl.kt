@@ -59,14 +59,17 @@ class AuthRepositoryImpl(
     }
 
     // ── iOS: native Apple Sign-In (IDToken — no browser redirect) ─────
-    // TODO: Wire this up when you implement ASAuthorization on the iOS side.
-    // The ViewModel should call this instead of signInWithApple() once
-    // the native AppleAuthProvider is ready.
-    override suspend fun signInWithAppleNative(idToken: String): Resource<AuthData, DataError.Remote> {
+    // The identity token's `nonce` claim is the SHA-256 of the raw nonce
+    // sent to Apple. Supabase needs the RAW nonce to re-hash and verify.
+    override suspend fun signInWithAppleNative(
+        idToken: String,
+        nonce: String,
+    ): Resource<AuthData, DataError.Remote> {
         return safeSupabaseCall {
             supabase.auth.signInWith(IDToken) {
                 this.idToken = idToken
                 this.provider = Apple
+                this.nonce = nonce
             }
             fetchAuthData()
         }

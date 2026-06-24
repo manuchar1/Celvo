@@ -7,14 +7,24 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import celvo.feature.store.generated.resources.Res
+import celvo.feature.store.generated.resources.error_3ds_redirect_failed
+import celvo.feature.store.generated.resources.error_auth_failed
+import celvo.feature.store.generated.resources.error_bad_request
+import celvo.feature.store.generated.resources.error_enter_promo_code
+import celvo.feature.store.generated.resources.error_generic_try_again
+import celvo.feature.store.generated.resources.error_no_internet
+import celvo.feature.store.generated.resources.error_payment_failed
+import celvo.feature.store.generated.resources.error_promo_invalid
+import celvo.feature.store.generated.resources.error_server_error_try_later
 import com.mtislab.celvo.feature.store.domain.model.PaymentInitiateRequest
 import com.mtislab.celvo.feature.store.domain.model.PromoValidationRequest
 import com.mtislab.celvo.feature.store.domain.model.WalletPaymentRequest
 import com.mtislab.celvo.feature.store.domain.model.WalletPaymentStatus
 import com.mtislab.celvo.feature.store.domain.model.WalletType
-import com.mtislab.celvo.feature.store.domain.repository.PromoClaimRepository
 import com.mtislab.celvo.feature.store.domain.repository.StoreRepository
 import com.mtislab.core.data.session.SessionManager
+import com.mtislab.core.domain.auth.AppleAuthProvider
 import com.mtislab.core.domain.auth.AuthState
 import com.mtislab.core.domain.auth.GoogleAuthProvider
 import com.mtislab.core.domain.model.AuthData
@@ -24,6 +34,7 @@ import com.mtislab.core.domain.payment.PendingPaymentStore
 import com.mtislab.core.domain.repository.AuthRepository
 import com.mtislab.core.domain.utils.DataError
 import com.mtislab.core.domain.utils.Resource
+import com.mtislab.core.presentation.util.UiText
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,8 +49,7 @@ class CheckoutViewModel(
     private val storeRepository: StoreRepository,
     private val sessionManager: SessionManager,
     private val authRepository: AuthRepository,
-    private val nativePayManager: NativePayManager,
-    private val promoClaimRepository: PromoClaimRepository
+    private val nativePayManager: NativePayManager
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CheckoutState())
@@ -54,7 +64,6 @@ class CheckoutViewModel(
         loadPackage(routeArgs.packageId)
         observeSession()
         checkWalletAvailability()
-        autoApplyClaimedPromo()
     }
 
     // -------------------------------------------------------------------------
@@ -107,7 +116,8 @@ class CheckoutViewModel(
             }
 
             // --- Wallet Payment Actions (NEW) ---
-            is CheckoutAction.WalletTokenReceived -> processWalletPayment(action.token)
+            is CheckoutAction.WalletTokenReceived ->
+                processWalletPayment(token = action.token, walletType = action.walletType)
 
             is CheckoutAction.WalletPaymentCancelled -> {
                 _state.update { it.copy(isLoading = false) }
@@ -116,7 +126,7 @@ class CheckoutViewModel(
             is CheckoutAction.WalletPaymentFailed -> {
                 _state.update { it.copy(isLoading = false, error = action.message) }
                 viewModelScope.launch {
-                    _events.send(CheckoutEvent.ShowError(action.message))
+                    _events.send(CheckoutEvent.ShowError(UiText.DynamicString(action.message)))
                 }
             }
 
@@ -126,7 +136,7 @@ class CheckoutViewModel(
             }
 
             is CheckoutAction.LoginWithGoogle -> loginWithGoogle(action.provider)
-            is CheckoutAction.LoginWithApple -> loginWithApple()
+            is CheckoutAction.LoginWithApple -> loginWithApple(action.provider)
 
             // --- Promo Code ---
             is CheckoutAction.OpenPromoSheet -> {
@@ -158,8 +168,6 @@ class CheckoutViewModel(
             is CheckoutAction.ApplyPromoCode -> validatePromoCode()
             is CheckoutAction.ClearPromoCode -> {
                 _state.update { it.copy(promo = PromoState()) }
-                // Prevent re-auto-apply on next Checkout visit
-                viewModelScope.launch { promoClaimRepository.clearAll() }
             }
         }
     }
@@ -186,8 +194,7 @@ class CheckoutViewModel(
                     _events.send(
                         CheckoutEvent.LaunchNativeWalletPayment(
                             amountCents = amountCents,
-                            currencyCode = pkg.currency.uppercase()
-                                .let { if (it == "₾" || it == "GEL") "GEL" else it }
+                            currencyCode = pkg.currency.toIso4217CurrencyCode()
                         )
                     )
                 }
@@ -202,7 +209,7 @@ class CheckoutViewModel(
     // NEW: Wallet Payment — send token to Celvo backend
     // -------------------------------------------------------------------------
 
-    private fun processWalletPayment(token: String) {
+    private fun processWalletPayment(token: String, walletType: WalletType) {
         val currentState = _state.value
         val pkg = currentState.packageDetails ?: return
 
@@ -214,7 +221,7 @@ class CheckoutViewModel(
                 bundleName = pkg.name,
                 amount = currentState.effectivePrice,
                 currency = "GEL",
-                paymentMethod = WalletType.GOOGLE_PAY,
+                paymentMethod = walletType,
                 walletToken = token,
                 promoCodeId = currentState.promo.appliedResult?.codeId
             )
@@ -229,6 +236,10 @@ class CheckoutViewModel(
 
                     when (payment.status) {
                         WalletPaymentStatus.COMPLETED -> {
+                            // Navigate to PaymentVerification so the screen can poll
+                            // /verify/{orderId} and surface the eSIM provisioning state.
+                            // Even on synchronous wallet COMPLETED, provisioning is an
+                            // async backend step — the verify poll handles both.
                             _events.send(
                                 CheckoutEvent.NavigateToPaymentResult(
                                     isSuccess = true,
@@ -238,17 +249,27 @@ class CheckoutViewModel(
                         }
 
                         WalletPaymentStatus.REQUIRES_3DS -> {
-                            // Redirect to 3DS page in browser
+                            // Redirect to 3DS page in browser. orderId was cached above
+                            // in PendingPaymentStore, so the deep-link return path will
+                            // resolve into PaymentVerification automatically.
                             payment.redirectUrl?.let { url ->
                                 _events.send(CheckoutEvent.OpenWebUrl(url))
                             } ?: _events.send(
-                                CheckoutEvent.ShowError("3DS გადამისამართება ვერ მოხერხდა")
+                                CheckoutEvent.ShowError(
+                                    UiText.Resource(Res.string.error_3ds_redirect_failed)
+                                )
                             )
                         }
 
                         WalletPaymentStatus.FAILED -> {
+                            // Still route through PaymentVerification (with the orderId)
+                            // so the same error UI is shown whether the payment failed
+                            // synchronously here or asynchronously via BOG callback.
                             _events.send(
-                                CheckoutEvent.NavigateToPaymentResult(isSuccess = false)
+                                CheckoutEvent.NavigateToPaymentResult(
+                                    isSuccess = false,
+                                    orderId = payment.orderId
+                                )
                             )
                         }
                     }
@@ -256,13 +277,13 @@ class CheckoutViewModel(
 
                 is Resource.Failure -> {
                     _state.update { it.copy(isLoading = false) }
-                    val message = when (result.error) {
-                        DataError.Remote.NO_INTERNET -> "ინტერნეტ კავშირი არ არის"
-                        DataError.Remote.SERVER_ERROR -> "სერვერის შეცდომა, სცადეთ მოგვიანებით"
-                        else -> "გადახდა ვერ მოხერხდა, სცადეთ თავიდან"
+                    val messageRes = when (result.error) {
+                        DataError.Remote.NO_INTERNET -> Res.string.error_no_internet
+                        DataError.Remote.SERVER_ERROR -> Res.string.error_server_error_try_later
+                        else -> Res.string.error_payment_failed
                     }
-                    _state.update { it.copy(error = message) }
-                    _events.send(CheckoutEvent.ShowError(message))
+                    _state.update { it.copy(error = result.error.toString()) }
+                    _events.send(CheckoutEvent.ShowError(UiText.Resource(messageRes)))
                 }
             }
         }
@@ -323,7 +344,11 @@ class CheckoutViewModel(
         val trimmedCode = currentPromo.code.trim()
         if (trimmedCode.isEmpty()) {
             _state.update {
-                it.copy(promo = it.promo.copy(errorMessage = "შეიყვანეთ პრომოკოდი"))
+                it.copy(
+                    promo = it.promo.copy(
+                        errorMessage = UiText.Resource(Res.string.error_enter_promo_code)
+                    )
+                )
             }
             return
         }
@@ -358,12 +383,14 @@ class CheckoutViewModel(
                             )
                         }
                     } else {
+                        val errorText = validation.errorMessage
+                            ?.let { UiText.DynamicString(it) }
+                            ?: UiText.Resource(Res.string.error_promo_invalid)
                         _state.update {
                             it.copy(
                                 promo = it.promo.copy(
                                     isValidating = false,
-                                    errorMessage = validation.errorMessage
-                                        ?: "პრომოკოდი არასწორია"
+                                    errorMessage = errorText
                                 )
                             )
                         }
@@ -371,14 +398,19 @@ class CheckoutViewModel(
                 }
 
                 is Resource.Failure -> {
-                    val message = when (result.error) {
-                        DataError.Remote.NO_INTERNET -> "ინტერნეტ კავშირი არ არის"
-                        DataError.Remote.SERVER_ERROR -> "სერვერის შეცდომა, სცადეთ მოგვიანებით"
-                        DataError.Remote.BAD_REQUEST -> "არასწორი მონაცემები"
-                        else -> "შეცდომა, სცადეთ თავიდან"
+                    val messageRes = when (result.error) {
+                        DataError.Remote.NO_INTERNET -> Res.string.error_no_internet
+                        DataError.Remote.SERVER_ERROR -> Res.string.error_server_error_try_later
+                        DataError.Remote.BAD_REQUEST -> Res.string.error_bad_request
+                        else -> Res.string.error_generic_try_again
                     }
                     _state.update {
-                        it.copy(promo = it.promo.copy(isValidating = false, errorMessage = message))
+                        it.copy(
+                            promo = it.promo.copy(
+                                isValidating = false,
+                                errorMessage = UiText.Resource(messageRes)
+                            )
+                        )
                     }
                 }
             }
@@ -410,10 +442,30 @@ class CheckoutViewModel(
         }
     }
 
-    private fun loginWithApple() {
+    private fun loginWithApple(provider: AppleAuthProvider?) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            handleAuthResult(authRepository.signInWithApple())
+            if (provider != null) {
+                // Native Apple Sign-In (iOS) — same fast IDToken path the login
+                // screen uses. Falls back to the web flow if the token fails.
+                when (val tokenResult = provider.getAppleIdToken()) {
+                    is Resource.Success -> {
+                        val (idToken, nonce) = tokenResult.data
+                        handleAuthResult(
+                            authRepository.signInWithAppleNative(
+                                idToken = idToken,
+                                nonce = nonce
+                            )
+                        )
+                    }
+
+                    is Resource.Failure -> _state.update {
+                        it.copy(isLoading = false, error = tokenResult.error.toString())
+                    }
+                }
+            } else {
+                handleAuthResult(authRepository.signInWithApple())
+            }
         }
     }
 
@@ -429,7 +481,14 @@ class CheckoutViewModel(
 
             is Resource.Failure -> {
                 _state.update { it.copy(isLoading = false, error = result.error.toString()) }
-                _events.send(CheckoutEvent.ShowError("ავტორიზაცია ვერ მოხერხდა: ${result.error}"))
+                _events.send(
+                    CheckoutEvent.ShowError(
+                        UiText.Resource(
+                            Res.string.error_auth_failed,
+                            arrayOf(result.error.toString())
+                        )
+                    )
+                )
             }
         }
     }
@@ -447,45 +506,27 @@ class CheckoutViewModel(
             }
         }
     }
+}
 
-
-    private fun autoApplyClaimedPromo() {
-        viewModelScope.launch {
-            val claimedCode = promoClaimRepository.getActivePromoCode() ?: return@launch
-
-            // Pre-fill the code in the promo state
-            _state.update {
-                it.copy(
-                    promo = it.promo.copy(
-                        code = claimedCode,
-                        errorMessage = null,
-                    )
-                )
-            }
-
-            // Wait for package to be loaded before validating.
-            // The package loads in a parallel coroutine; we poll briefly.
-            awaitPackageLoaded()
-
-            // Now trigger the same validatePromoCode() that the manual flow uses.
-            // This reuses 100% of the existing validation logic.
-            validatePromoCode()
+/**
+ * Normalizes a currency value (symbol or ISO code) to an ISO 4217 3-letter
+ * code. Google Pay's `transactionInfo.currencyCode` and Apple Pay's
+ * `PKPaymentRequest.currencyCode` both require strict ISO 4217 — symbols
+ * like "$" or "₾" are rejected with "currencyCode is in wrong format".
+ *
+ * Falls back to "GEL" for anything unrecognized, since BOG's wallet-pay
+ * endpoint settles in GEL regardless of the display currency.
+ */
+private fun String.toIso4217CurrencyCode(): String {
+    return when (val trimmed = trim()) {
+        "$", "USD", "usd" -> "USD"
+        "€", "EUR", "eur" -> "EUR"
+        "₾", "GEL", "gel" -> "GEL"
+        "£", "GBP", "gbp" -> "GBP"
+        else -> if (trimmed.length == 3 && trimmed.all { it.isLetter() }) {
+            trimmed.uppercase()
+        } else {
+            "GEL"
         }
     }
-
-    /**
-     * Simple poll that suspends until [CheckoutState.packageDetails] is non-null.
-     * Avoids a complex Flow combination by leveraging the fact that package
-     * loading is fast (~100-200ms) and always succeeds if the ID is valid.
-     */
-    private suspend fun awaitPackageLoaded() {
-        // Max 50 iterations × 100ms = 5s timeout (defensive guard)
-        var attempts = 0
-        while (_state.value.packageDetails == null && attempts < 50) {
-            kotlinx.coroutines.delay(100)
-            attempts++
-        }
-    }
-
-
 }

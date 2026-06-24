@@ -8,12 +8,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import com.celvo.core.designsystem.resources.Res
+import com.celvo.core.designsystem.resources.payment_google_pay_error
+import com.celvo.core.designsystem.resources.payment_no_data_received
+import com.celvo.core.designsystem.resources.payment_no_response
+import com.celvo.core.designsystem.resources.payment_token_extraction_failed
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.wallet.PaymentData
 import com.google.android.gms.wallet.PaymentDataRequest
 import com.google.pay.button.ButtonTheme
 import com.google.pay.button.ButtonType
 import com.google.pay.button.PayButton
+import org.jetbrains.compose.resources.stringResource
 import org.json.JSONObject
 
 @Composable
@@ -43,6 +49,14 @@ actual fun rememberNativePayLauncher(
     val context = LocalContext.current
     val paymentsClient = remember { GooglePayConfig.createPaymentsClient(context) }
 
+    // Resolve localized error strings inside @Composable scope and capture them
+    // so the off-main-thread Tasks callbacks below can surface translated text
+    // without re-entering composition.
+    val tokenError = stringResource(Res.string.payment_token_extraction_failed)
+    val noPaymentDataError = stringResource(Res.string.payment_no_data_received)
+    val noResponseError = stringResource(Res.string.payment_no_response)
+    val genericError = stringResource(Res.string.payment_google_pay_error)
+
     val resolvePaymentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartIntentSenderForResult()
     ) { result ->
@@ -51,12 +65,12 @@ actual fun rememberNativePayLauncher(
                 result.data?.let { intent ->
                     PaymentData.getFromIntent(intent)?.let { paymentData ->
                         extractToken(paymentData)?.let(onTokenReceived)
-                            ?: onError("ტოკენის ამოღება ვერ მოხერხდა")
-                    } ?: onError("გადახდის მონაცემები ვერ მოიძებნა")
-                } ?: onError("Google Pay-დან პასუხი არ მიღებულა")
+                            ?: onError(tokenError)
+                    } ?: onError(noPaymentDataError)
+                } ?: onError(noResponseError)
             }
             Activity.RESULT_CANCELED -> onCancelled()
-            else -> onError("Google Pay შეცდომა")
+            else -> onError(genericError)
         }
     }
 
@@ -75,7 +89,7 @@ actual fun rememberNativePayLauncher(
                     if (completedTask.isSuccessful) {
                         completedTask.result?.let { paymentData ->
                             extractToken(paymentData)?.let(onTokenReceived)
-                                ?: onError("ტოკენის ამოღება ვერ მოხერხდა")
+                                ?: onError(tokenError)
                         }
                     } else {
                         when (val exception = completedTask.exception) {
@@ -84,7 +98,7 @@ actual fun rememberNativePayLauncher(
                                     IntentSenderRequest.Builder(exception.resolution).build()
                                 )
                             }
-                            else -> onError(exception?.message ?: "Google Pay შეცდომა")
+                            else -> onError(exception?.message ?: genericError)
                         }
                     }
                 }

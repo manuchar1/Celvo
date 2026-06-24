@@ -1,7 +1,7 @@
 package com.mtislab.celvo.feature.profile.presentation
 
 
-import AppTheme
+import com.mtislab.core.domain.model.AppTheme
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,7 +20,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,15 +44,40 @@ import celvo.feature.profile.generated.resources.ic_log_out_circle
 import celvo.feature.profile.generated.resources.ic_moon
 import celvo.feature.profile.generated.resources.ic_users
 import celvo.feature.profile.generated.resources.ic_world
+import celvo.feature.profile.generated.resources.profile_dark_mode
+import celvo.feature.profile.generated.resources.profile_delete_account_dialog_cancel
+import celvo.feature.profile.generated.resources.profile_delete_account_dialog_confirm
+import celvo.feature.profile.generated.resources.profile_delete_account_dialog_consequence
+import celvo.feature.profile.generated.resources.profile_delete_account_dialog_title
+import celvo.feature.profile.generated.resources.profile_delete_account_dialog_warning
+import celvo.feature.profile.generated.resources.profile_delete_account_error_generic
+import celvo.feature.profile.generated.resources.profile_delete_account_trigger
+import celvo.feature.profile.generated.resources.profile_log_out
+import celvo.feature.profile.generated.resources.profile_logout_confirm
+import celvo.feature.profile.generated.resources.profile_logout_confirmation
+import celvo.feature.profile.generated.resources.profile_logout_dismiss
+import celvo.feature.profile.generated.resources.theme_off
+import celvo.feature.profile.generated.resources.theme_on
+import celvo.feature.profile.generated.resources.theme_system_default
+import com.celvo.core.designsystem.resources.Res as CoreRes
+import com.celvo.core.designsystem.resources.legal_privacy_policy
+import com.celvo.core.designsystem.resources.legal_terms_of_service
 import com.mtislab.celvo.feature.profile.domain.model.UserProfile
+import com.mtislab.celvo.feature.profile.presentation.components.DeleteAccountDialog
 import com.mtislab.celvo.feature.profile.presentation.components.ProfileHeader
 import com.mtislab.celvo.feature.profile.presentation.components.ProfileMenuItem
 import com.mtislab.celvo.feature.profile.presentation.settings.SettingsState
 import com.mtislab.celvo.feature.profile.presentation.settings.SettingsViewModel
 import com.mtislab.core.designsystem.components.cards.CelvoCard
 import com.mtislab.core.designsystem.components.dialogs.CelvoDialog
+import com.mtislab.core.designsystem.components.notifications.CelvoNotificationData
+import com.mtislab.core.designsystem.components.notifications.LocalCelvoNotification
+import com.mtislab.core.designsystem.legal.LegalLinks
+import com.mtislab.core.designsystem.legal.rememberLegalOpener
 import com.mtislab.core.designsystem.theme.extended
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -61,6 +89,22 @@ fun ProfileRoot(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val settingsState by settingsViewModel.state.collectAsStateWithLifecycle()
+    val notificationState = LocalCelvoNotification.current
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is ProfileEvent.ShowNotification -> {
+                    notificationState.show(
+                        CelvoNotificationData(
+                            message = getString(event.messageRes),
+                            type = event.type
+                        )
+                    )
+                }
+            }
+        }
+    }
 
     ProfileScreen(
         state = state,
@@ -81,6 +125,7 @@ fun ProfileScreen(
 ) {
     val scrollState = rememberScrollState()
     var showLogoutDialog by remember { mutableStateOf(false) }
+    val openLegal = rememberLegalOpener()
 
 
     Column(
@@ -129,47 +174,59 @@ fun ProfileScreen(
                 CelvoCard(
                     contentPadding = PaddingValues(0.dp)
                 ) {
-                    ProfileMenuItem(
-                        icon = painterResource(Res.drawable.ic_card),
-                        title = "გადახდის მეთოდები",
-                        onClick = { /* TODO */ }
-                    )
-                    ProfileMenuItem(
-                        icon = painterResource(Res.drawable.ic_users),
-                        title = "მოიწვიე მეგობარი",
-                        onClick = { /* TODO */ }
-                    )
+//                    ProfileMenuItem(
+//                        icon = painterResource(Res.drawable.ic_card),
+//                        title = "გადახდის მეთოდები",
+//                        onClick = { /* TODO */ }
+//                    )
+//                    ProfileMenuItem(
+//                        icon = painterResource(Res.drawable.ic_users),
+//                        title = "მოიწვიე მეგობარი",
+//                        onClick = { /* TODO */ }
+//                    )
 
                     ProfileMenuItem(
                         icon = painterResource(Res.drawable.ic_moon),
-                        title = "მუქი რეჟიმი",
+                        title = stringResource(Res.string.profile_dark_mode),
                         isSwitch = false,
-                        // ვაჩვენებთ ტექსტს მიმდინარე თემის მიხედვით
                         trailingText = when(settingsState.appTheme) {
-                            AppTheme.DARK -> "ჩართულია"
-                            AppTheme.LIGHT -> "გამორთულია"
-                            AppTheme.SYSTEM -> "ავტომატური"
+                            AppTheme.DARK -> stringResource(Res.string.theme_on)
+                            AppTheme.LIGHT -> stringResource(Res.string.theme_off)
+                            AppTheme.SYSTEM -> stringResource(Res.string.theme_system_default)
                         },
+                        showDivider = false,
                         onClick = onNavigateToTheme
                     )
 
-                    // ✅ ენა (განახლებული - უკავშირდება ViewModel-ს)
+//                    ProfileMenuItem(
+//                        icon = painterResource(Res.drawable.ic_world),
+//                        title = "ენა",
+//                        trailingText = when(settingsState.currentLanguage) {
+//                            "ka" -> "ქართული"
+//                            "en" -> "English"
+//                            else -> settingsState.currentLanguage
+//                        },
+//                        onClick = onNavigateToLanguage
+//                    )
+                }
+
+                // --- Legal Section ---
+                // Standard, discoverable place for legal docs. Both open in an in-app
+                // browser (Chrome Custom Tabs / SFSafariViewController) via openLegal.
+                CelvoCard(
+                    contentPadding = PaddingValues(0.dp)
+                ) {
                     ProfileMenuItem(
-                        icon = painterResource(Res.drawable.ic_world),
-                        title = "ენა",
-                        trailingText = when(settingsState.currentLanguage) {
-                            "ka" -> "ქართული"
-                            "en" -> "English"
-                            else -> settingsState.currentLanguage
-                        },
-                        onClick = onNavigateToLanguage // 🚀 ნავიგაცია
+                        icon = painterResource(Res.drawable.ic_doc),
+                        title = stringResource(CoreRes.string.legal_terms_of_service),
+                        onClick = { openLegal(LegalLinks.TERMS_OF_SERVICE) }
                     )
 
                     ProfileMenuItem(
                         icon = painterResource(Res.drawable.ic_doc),
-                        title = "წესები და პირობები",
+                        title = stringResource(CoreRes.string.legal_privacy_policy),
                         showDivider = false,
-                        onClick = { /* TODO */ }
+                        onClick = { openLegal(LegalLinks.PRIVACY_POLICY) }
                     )
                 }
 
@@ -180,10 +237,34 @@ fun ProfileScreen(
                 ) {
                     ProfileMenuItem(
                         icon = painterResource(Res.drawable.ic_log_out_circle),
-                        title = "გამოსვლა",
+                        title = stringResource(Res.string.profile_log_out),
                         showDivider = false,
                         textColor = MaterialTheme.colorScheme.error.copy(alpha = 0.9f),
                         onClick = { showLogoutDialog = true }
+                    )
+                }
+            }
+
+            // --- Delete Account trigger ---
+            // Industry-standard placement: subtle text button at the very bottom of
+            // Profile. Discoverable but never inviting. Hit target is widened via
+            // minimumInteractiveComponentSize to satisfy a11y while keeping the
+            // visible text at caption size.
+            Spacer(modifier = Modifier.height(24.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                TextButton(
+                    onClick = { onAction(ProfileAction.OnDeleteAccountClick) },
+                    modifier = Modifier.minimumInteractiveComponentSize()
+                ) {
+                    Text(
+                        text = stringResource(Res.string.profile_delete_account_trigger),
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp),
+                        color = MaterialTheme.colorScheme.error
                     )
                 }
             }
@@ -192,11 +273,11 @@ fun ProfileScreen(
 
     if (showLogoutDialog) {
         CelvoDialog(
-            title = "გამოსვლა",
-            description = "ნამდვილად გსურთ აპლიკაციიდან\nგამოსვლა?",
+            title = stringResource(Res.string.profile_log_out),
+            description = stringResource(Res.string.profile_logout_confirmation),
             icon = painterResource(Res.drawable.ic_log_out_circle),
-            confirmText = "დიახ, მსურს",
-            dismissText = "ახლა არა",
+            confirmText = stringResource(Res.string.profile_logout_confirm),
+            dismissText = stringResource(Res.string.profile_logout_dismiss),
             onConfirm = {
                 showLogoutDialog = false
                 onAction(ProfileAction.OnLogoutClick)
@@ -204,6 +285,24 @@ fun ProfileScreen(
             onDismiss = { showLogoutDialog = false },
             confirmContainerColor = Color(0xFFE59CA8),
             confirmContentColor = Color.Black
+        )
+    }
+
+    if (state.deletionStatus != DeletionStatus.Idle) {
+        val inlineError = if (state.deletionStatus == DeletionStatus.RetryableError) {
+            stringResource(Res.string.profile_delete_account_error_generic)
+        } else null
+
+        DeleteAccountDialog(
+            title = stringResource(Res.string.profile_delete_account_dialog_title),
+            warning = stringResource(Res.string.profile_delete_account_dialog_warning),
+            consequence = stringResource(Res.string.profile_delete_account_dialog_consequence),
+            cancelText = stringResource(Res.string.profile_delete_account_dialog_cancel),
+            confirmText = stringResource(Res.string.profile_delete_account_dialog_confirm),
+            inlineErrorText = inlineError,
+            isLoading = state.deletionStatus == DeletionStatus.Deleting,
+            onCancel = { onAction(ProfileAction.OnCancelDelete) },
+            onConfirm = { onAction(ProfileAction.OnConfirmDelete) }
         )
     }
 }

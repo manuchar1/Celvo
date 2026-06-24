@@ -13,6 +13,4 @@ sealed interface MyEsimListAction {
     data object AddEsimClick : MyEsimListAction
 
     data class ActivateClick(val esim: UserEsim) : MyEsimListAction
-
-    data object DismissError : MyEsimListAction
 }

@@ -3,6 +3,20 @@
     <string name="country_turkiye">Türkiye</string>
     <string name="country_germany">Germany</string>
     <string name="country_georgia">Georgia</string>
-    <string name="countries_500_plus">500+ countries</string>
+    <string name="countries_500_plus">200+ countries</string>
 
+    <!-- Onboarding pager -->
+    <string name="onboarding_page1_title">Borderless connection\nin any country</string>
+    <string name="onboarding_page1_subtitle">Choose a country and activate eSIM\nin seconds.</string>
+    <string name="onboarding_page2_title">Easy setup\nwith QR code</string>
+    <string name="onboarding_page2_subtitle">Scan and connect to the network\neffortlessly.</string>
+    <string name="onboarding_page3_title">Best prices\nwithout roaming</string>
+    <string name="onboarding_page3_subtitle">Save money and enjoy\nlocal rates.</string>
+
+    <!-- Sign-in CTAs -->
+    <string name="register_apple_sign_in">Sign in with Apple</string>
+    <string name="register_google_sign_in">Sign in with Google</string>
+
+    <!-- Auth errors -->
+    <string name="auth_error_title">Sign-in failed</string>
 </resources>

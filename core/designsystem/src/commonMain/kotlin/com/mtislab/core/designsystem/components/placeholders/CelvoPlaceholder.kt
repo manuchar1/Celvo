@@ -14,11 +14,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mtislab.core.designsystem.components.buttons.CelvoButton
+import com.mtislab.core.designsystem.theme.CelvoDark900
+import com.mtislab.core.designsystem.theme.CelvoPurple300
 import com.mtislab.core.designsystem.theme.extended
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -32,6 +35,8 @@ fun CelvoPlaceholder(
     onActionClick: (() -> Unit)? = null,
     iconScale: Float = 1f,
     textTopOffset: Dp = 0.dp,
+    buttonContainerColor: Color = CelvoPurple300,
+    buttonContentColor: Color = CelvoDark900,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -47,16 +52,16 @@ fun CelvoPlaceholder(
             contentDescription = null,
             modifier = Modifier
                 .size(200.dp)
-                .scale(iconScale), // <-- არეგულირებს scale-ს
+                .scale(iconScale),
             contentScale = ContentScale.Fit
         )
 
         Spacer(modifier = Modifier.height(2.dp))
 
-        // ვაჯგუფებთ ტექსტებს, რომ offset-მა ორივეზე იმოქმედოს პროპორციულად
+
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.offset(y = textTopOffset) // <-- ტექსტს მიწევს Icon-ისკენ, თუ negative მნიშვნელობას გადააწვდი (მაგ: -16.dp)
+            modifier = Modifier.offset(y = textTopOffset)
         ) {
             Text(
                 text = title,
@@ -80,6 +85,8 @@ fun CelvoPlaceholder(
             CelvoButton(
                 text = actionLabel,
                 onClick = onActionClick,
+                containerColor = buttonContainerColor,
+                contentColor = buttonContentColor,
                 modifier = Modifier.fillMaxWidth(0.6f)
             )
         }

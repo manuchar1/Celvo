@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Splash screen: light theme = white background; the logo sits on a navy chip. -->
+    <color name="splash_background">#FFFFFF</color>
+    <color name="splash_icon_background">#1C1B2E</color>
+</resources>

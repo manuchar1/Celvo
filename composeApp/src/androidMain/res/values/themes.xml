@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App theme applied after the splash screen is dismissed. -->
+    <style name="Theme.Celvo" parent="@android:style/Theme.Material.Light.NoActionBar" />
+
+    <!-- Launch theme (Android 12+ SplashScreen API, back-ported via core-splashscreen).
+         Full-screen background is theme-aware (white / dark); the Celvo logo is shown
+         on a navy chip so it stays legible on a white background. -->
+    <style name="Theme.Celvo.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/splash_icon_background</item>
+        <item name="postSplashScreenTheme">@style/Theme.Celvo</item>
+    </style>
+</resources>

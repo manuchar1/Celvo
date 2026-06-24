@@ -15,5 +15,12 @@ data class PackageDto(
     val bestValue: Boolean,
     val originalPrice: Double? = null,
     val discountPercent: Int? = 0,
-    val operators: List<OperatorDto> = emptyList()
+    val operators: List<OperatorDto> = emptyList(),
+    val description: String? = null,
+    val networkTypes: List<String> = emptyList(),
+    val coverageCountries: List<String> = emptyList(),
+    val coverageCount: Int = 0,
+    val planTier: String? = null,
+    val badgeText: String? = null,
+    val badgeColor: String? = null
 )

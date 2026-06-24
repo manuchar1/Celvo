@@ -8,8 +8,7 @@ data class MyEsimListState(
     val esims: List<UserEsim> = emptyList(),
     val error: DataError? = null,
     val isInstalling: Boolean = false,
-    val installingEsimId: String? = null,
-    val installationError: String? = null
+    val installingEsimId: String? = null
 ) {
     val showEmptyState: Boolean
         get() = !isLoading && esims.isEmpty() && error == null

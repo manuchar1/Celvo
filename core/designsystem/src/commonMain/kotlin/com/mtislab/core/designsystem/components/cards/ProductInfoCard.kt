@@ -13,9 +13,12 @@ import androidx.compose.ui.unit.sp
 import com.celvo.core.designsystem.resources.Res
 import com.celvo.core.designsystem.resources.ic_network
 import com.celvo.core.designsystem.resources.ic_speed
+import com.celvo.core.designsystem.resources.product_info_networks
+import com.celvo.core.designsystem.resources.product_info_speed
 import com.mtislab.core.designsystem.theme.PlusJakartaSans
 import com.mtislab.core.designsystem.theme.extended
 import com.mtislab.core.domain.model.PackageInfoCardData
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Unified eSIM package info card — visible to any feature module via core:designsystem.
@@ -66,11 +69,13 @@ fun ProductInfoCard(
                     color = MaterialTheme.colorScheme.extended.textPrimary,
                 )
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = data.validityDisplay,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.extended.textSecondary,
-                )
+                data.validityDisplay?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.extended.textSecondary,
+                    )
+                }
             }
             CountryBadge(
                 isoCode = data.isoCode,
@@ -85,13 +90,18 @@ fun ProductInfoCard(
         // ── Speed ─────────────────────────────────────────────────────────
         PackageInfoRow(
             icon = Res.drawable.ic_speed,
-            label = "სიჩქარე",
+            label = stringResource(Res.string.product_info_speed),
             value = "5G / LTE",
         )
 
         PackageInfoDivider()
 
         // ── Networks ──────────────────────────────────────────────────────
+        // Temporarily hidden on checkout — keep the block intact so it can be
+        // restored without re-deriving the operator summary string. The
+        // trailing PackageInfoDivider below also stays commented so we don't
+        // render two consecutive dividers between Speed and the trailing row.
+        /*
         val networksValue = if (data.additionalOperatorCount > 0) {
             "${data.primaryOperator}... +${data.additionalOperatorCount}"
         } else {
@@ -99,13 +109,14 @@ fun ProductInfoCard(
         }
         PackageInfoRow(
             icon = Res.drawable.ic_network,
-            label = "ქსელები",
+            label = stringResource(Res.string.product_info_networks),
             value = networksValue,
             isClickable = true,
             onClick = onNetworkClick,
         )
 
         PackageInfoDivider()
+        */
 
         // ── Trailing row (screen-specific) ────────────────────────────────
         trailingRow()

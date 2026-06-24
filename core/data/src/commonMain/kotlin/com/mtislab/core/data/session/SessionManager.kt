@@ -1,5 +1,6 @@
 package com.mtislab.core.data.session
 
+import com.mtislab.core.data.networking.AuthTokenInvalidator
 import com.mtislab.core.domain.auth.AuthState
 import com.mtislab.core.domain.auth.SessionController
 import com.mtislab.core.domain.auth.SessionEvent
@@ -37,6 +38,7 @@ class SessionManager(
     private val tokenStorage: TokenStorage,
     private val supabase: SupabaseClient,
     private val logger: CelvoLogger,
+    private val tokenInvalidator: AuthTokenInvalidator,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 ) : SessionController {
 
@@ -76,6 +78,11 @@ class SessionManager(
         consecutiveRefreshFailures = 0
         logger.info("[SessionManager] Session saved for userId=$userId")
 
+        // Drop the previous user's token cached inside the Ktor client so the
+        // next request re-reads the token just saved above. Done before the
+        // event is emitted, so any consumer that reacts already sees it cleared.
+        tokenInvalidator.invalidate()
+
         _sessionEvents.emit(SessionEvent.UserChanged(userId))
         logger.info("[SessionManager] Emitted SessionEvent.UserChanged($userId)")
     }
@@ -90,6 +97,9 @@ class SessionManager(
         tokenStorage.clearSession()
         consecutiveRefreshFailures = 0
         logger.info("[SessionManager] Local session cleared")
+
+        // Drop the cached token so no stale request can reuse it post-logout.
+        tokenInvalidator.invalidate()
 
         // 🔑 Signal all ViewModels to clear user-specific caches
         _sessionEvents.emit(SessionEvent.LoggedOut)

@@ -1,9 +1,7 @@
 package com.mtislab.celvo.feature.store.presentation.packages
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -37,9 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -47,17 +42,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import celvo.feature.store.generated.resources.Res
-import celvo.feature.store.generated.resources.ic_fire
+import celvo.feature.store.generated.resources.packages_badge_countries
+import celvo.feature.store.generated.resources.packages_badge_discount
+import celvo.feature.store.generated.resources.packages_pick_plan
+import celvo.feature.store.generated.resources.packages_subtitle_separator
+import celvo.feature.store.generated.resources.packages_tab_data
+import celvo.feature.store.generated.resources.packages_tab_unlimited
 import coil3.compose.AsyncImage
 import com.celvo.core.designsystem.resources.ic_left_arrow
 import com.mtislab.celvo.feature.store.domain.model.EsimPackage
-import com.mtislab.celvo.feature.store.domain.model.StoreItemType
 import com.mtislab.core.designsystem.components.cards.CelvoCard
 import com.mtislab.core.designsystem.components.switchers.CelvoTabSwitcher
 import com.mtislab.core.designsystem.theme.extended
 import com.mtislab.core.designsystem.utils.getRegionIcon
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import com.celvo.core.designsystem.resources.Res as CoreRes
 
@@ -112,8 +112,6 @@ fun PackagesScreenScreen(
         getRegionIcon(isoCode)
     }
 
-
-
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
@@ -143,7 +141,10 @@ fun PackagesScreenScreen(
                 }
 
                 CelvoTabSwitcher(
-                    options = listOf("გიგაბაიტები", "ულიმიტო"),
+                    options = listOf(
+                        stringResource(Res.string.packages_tab_data),
+                        stringResource(Res.string.packages_tab_unlimited),
+                    ),
                     selectedIndex = selectedIndex,
                     onOptionSelected = { index ->
                         val newCategory =
@@ -157,7 +158,7 @@ fun PackagesScreenScreen(
 
             // --- Title ---
             Text(
-                text = "აირჩიე პაკეტი",
+                text = stringResource(Res.string.packages_pick_plan),
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
@@ -181,9 +182,7 @@ fun PackagesScreenScreen(
                     items(state.filteredPackages) { pkg ->
                         PackageCard(
                             pkg = pkg,
-                            onClick = {
-                                onPackageSelected(pkg)
-                            }
+                            onClick = { onPackageSelected(pkg) }
                         )
                     }
                 }
@@ -197,195 +196,170 @@ fun PackageCard(
     pkg: EsimPackage,
     onClick: () -> Unit
 ) {
-    val isPopular = pkg.isBestValue
-    val successColor = MaterialTheme.colorScheme.extended.success
-
-    val customBorder = if (isPopular) {
-        BorderStroke(1.dp, successColor)
-    } else {
-        null
+    val title = buildString {
+        append(pkg.dataAmountDisplay)
+        pkg.planTier?.takeIf { it.isNotBlank() }?.let {
+            append(' ')
+            append(it)
+        }
     }
+
+    val subtitle = packageSubtitle(pkg)
 
     CelvoCard(
         onClick = onClick,
-        border = customBorder,
         contentPadding = PaddingValues(0.dp)
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            if (isPopular) {
-                BestValueGlow(
-                    color = successColor,
-                    modifier = Modifier.align(Alignment.TopEnd)
+        Box(modifier = Modifier.fillMaxWidth()) {
+            pkg.badgeText?.takeIf { it.isNotBlank() }?.let { promoText ->
+                PromoPill(
+                    text = promoText,
+                    hexColor = pkg.badgeColor,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 8.dp, end = 8.dp)
                 )
             }
 
-            Column(
-                modifier = Modifier.padding(16.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (isPopular) {
-                    PopularBadge()
-                    Spacer(modifier = Modifier.height(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp
+                        ),
+                        color = MaterialTheme.colorScheme.extended.textPrimary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
+                        color = MaterialTheme.colorScheme.extended.textSecondary,
+                        maxLines = 1
+                    )
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = pkg.dataAmountDisplay,
-                            style = MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp
-                            ),
-                            color = MaterialTheme.colorScheme.extended.textPrimary
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = pkg.validityDisplay,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontSize = 14.sp
-                            ),
-                            color = MaterialTheme.colorScheme.extended.textSecondary
-                        )
-                    }
-
-                    PriceSection(pkg)
-                }
+                PriceSection(pkg)
             }
         }
     }
 }
 
 @Composable
-fun BestValueGlow(color: Color, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .size(120.dp)
-            .offset(x = 30.dp, y = (-30).dp)
-            .background(
-                brush = Brush.radialGradient(
-                    colors = listOf(color.copy(alpha = 0.32f), Color.Transparent),
-                    radius = 160f
-                )
-            )
-    )
+private fun packageSubtitle(pkg: EsimPackage): String {
+    val separator = stringResource(Res.string.packages_subtitle_separator)
+    val coverageLabel = if (pkg.coverageCount > 1) {
+        stringResource(Res.string.packages_badge_countries, pkg.coverageCount)
+    } else {
+        null
+    }
+    return listOfNotNull(pkg.validityDisplay, coverageLabel)
+        .filter { it.isNotBlank() }
+        .joinToString(separator)
 }
 
 @Composable
 fun PriceSection(pkg: EsimPackage) {
-    val hasDiscount = pkg.originalPrice != null && pkg.originalPrice > pkg.price
+    val originalPrice = pkg.originalPrice
+    val showStrike = originalPrice != null && originalPrice > pkg.price
+    val discountPercent = pkg.discountPercent?.takeIf { it > 0 }
 
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        if (hasDiscount) {
-            val percentText = pkg.discountPercent?.let { "-$it%" } ?: ""
-            if (percentText.isNotEmpty()) {
-                DiscountBadge(text = percentText)
-                Spacer(modifier = Modifier.width(8.dp))
+    Column(horizontalAlignment = Alignment.End) {
+        if (showStrike) {
+            val formattedOld = if (originalPrice % 1.0 == 0.0) {
+                "${originalPrice.toInt()}"
+            } else {
+                "$originalPrice"
             }
-        }
-
-        Column(horizontalAlignment = Alignment.End) {
             Text(
-                text = "${pkg.price} ${pkg.currency}",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                ),
-                color = MaterialTheme.colorScheme.extended.textPrimary
-            )
-
-            if (hasDiscount) {
-                val oldPrice = pkg.originalPrice
-                val formattedOld = if (oldPrice != null && oldPrice % 1.0 == 0.0) {
-                    "${oldPrice.toInt()}"
-                } else {
-                    "$oldPrice"
-                }
-
-                Text(
-                    text = "$formattedOld ${pkg.currency}",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        textDecoration = TextDecoration.LineThrough,
-                        fontSize = 12.sp
-                    ),
-                    color = MaterialTheme.colorScheme.extended.textSecondary
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun PopularBadge() {
-    val successColor = MaterialTheme.colorScheme.extended.success
-    val onSurface = MaterialTheme.colorScheme.onSurface
-
-    BadgeContainer(
-        color = successColor.copy(alpha = 0.2f),
-        shape = RoundedCornerShape(100.dp),
-        border = BorderStroke(1.dp, successColor.copy(alpha = 0.5f))
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                painter = painterResource(Res.drawable.ic_fire),
-                contentDescription = null,
-                tint = onSurface,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = "პოპულარული",
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontWeight = FontWeight.Bold,
+                text = "${pkg.currency} $formattedOld",
+                style = MaterialTheme.typography.bodySmall.copy(
+                    textDecoration = TextDecoration.LineThrough,
                     fontSize = 12.sp
                 ),
-                color = onSurface
+                color = MaterialTheme.colorScheme.extended.textSecondary
+            )
+        }
+
+        Text(
+            text = "${pkg.currency} ${pkg.price}",
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+            ),
+            color = MaterialTheme.colorScheme.extended.textPrimary
+        )
+
+        if (discountPercent != null) {
+            Spacer(modifier = Modifier.height(4.dp))
+            DiscountChip(
+                percent = discountPercent,
+                hexColor = pkg.badgeColor
             )
         }
     }
 }
 
 @Composable
-fun DiscountBadge(text: String) {
-    val warningColor = MaterialTheme.colorScheme.extended.warning
-
-    BadgeContainer(
-        color = warningColor,
-        shape = CircleShape
+private fun DiscountChip(percent: Int, hexColor: String?) {
+    val bg = parseHexColor(hexColor) ?: MaterialTheme.colorScheme.extended.warning
+    Box(
+        modifier = Modifier
+            .background(bg, RoundedCornerShape(100.dp))
+            .padding(horizontal = 8.dp, vertical = 2.dp)
     ) {
         Text(
-            text = text,
+            text = stringResource(Res.string.packages_badge_discount, percent),
             style = MaterialTheme.typography.labelSmall.copy(
                 fontWeight = FontWeight.Bold,
-                fontSize = 12.sp
+                fontSize = 11.sp
             ),
             color = Color.Black,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            maxLines = 1
         )
     }
 }
 
 @Composable
-fun BadgeContainer(
-    color: Color,
-    shape: Shape,
-    border: BorderStroke? = null,
-    content: @Composable () -> Unit
+private fun PromoPill(
+    text: String,
+    hexColor: String?,
+    modifier: Modifier = Modifier
 ) {
+    val bg = parseHexColor(hexColor) ?: MaterialTheme.colorScheme.primary
     Box(
-        modifier = Modifier
-            .background(color, shape)
-            .border(border ?: BorderStroke(0.dp, Color.Transparent), shape)
-            .clip(shape),
-        contentAlignment = Alignment.Center
+        modifier = modifier
+            .background(bg, RoundedCornerShape(100.dp))
+            .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
-        content()
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 11.sp
+            ),
+            color = Color.Black,
+            maxLines = 1
+        )
     }
+}
+
+private fun parseHexColor(hex: String?): Color? {
+    val raw = hex?.trim()?.removePrefix("#") ?: return null
+    val normalized = when (raw.length) {
+        6 -> "FF$raw"
+        8 -> raw
+        else -> return null
+    }
+    val parsed = normalized.toLongOrNull(16) ?: return null
+    return Color(parsed)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -32,4 +32,37 @@
     <string name="offline_instructions_step4_body">Once you arrive at your destination, enable Data Roaming for the eSIM line in your device settings. Your data plan will start automatically.</string>
     <string name="offline_instructions_note_title">Important</string>
     <string name="offline_instructions_note_body">Your device must support eSIM technology. Most modern smartphones released after 2018 support eSIM. If you encounter any issues, please contact our support team.</string>
+
+    <!-- Login bottom sheet -->
+    <string name="login_sheet_title">Sign in to your account</string>
+    <string name="login_sheet_subtitle">Choose a sign-in method</string>
+    <string name="login_sheet_apple">Sign in with Apple</string>
+    <string name="login_sheet_google">Sign in with Google</string>
+
+    <!-- Legal documents (Terms of Service / Privacy Policy) -->
+    <string name="legal_section_title">Legal</string>
+    <string name="legal_terms_of_service">Terms of Service</string>
+    <string name="legal_privacy_policy">Privacy Policy</string>
+    <string name="legal_consent_signin">By continuing, you agree to our %1$s and %2$s.</string>
+    <string name="legal_consent_checkout">By purchasing, you agree to the %1$s. eSIM data is a digital good — activation begins performance and you waive your statutory right of withdrawal.</string>
+    <string name="legal_privacy_delete_notice">See how we handle and delete your data in our %1$s.</string>
+
+    <!-- Product info card -->
+    <string name="product_info_speed">Speed</string>
+    <string name="product_info_networks">Networks</string>
+
+    <!-- Unlimited bundle rendering -->
+    <string name="bundle_unlimited_label">Unlimited</string>
+    <string name="bundle_unlimited_with_glyph">∞ Unlimited</string>
+    <string name="bundle_throttle_full_speed">%1$s at full speed</string>
+    <string name="bundle_throttle_per_day_full_speed">%1$s / day at full speed</string>
+    <string name="bundle_throttle_then_speed">then %1$s</string>
+    <string name="bundle_also_works_in">Also works in:</string>
+
+    <!-- Native payment errors -->
+    <string name="payment_token_extraction_failed">Could not retrieve payment token</string>
+    <string name="payment_no_data_received">No payment data received</string>
+    <string name="payment_no_response">No response received from Google Pay</string>
+    <string name="payment_google_pay_error">Google Pay error</string>
+    <string name="payment_apple_pay_unavailable">Apple Pay couldn\'t be opened</string>
 </resources>

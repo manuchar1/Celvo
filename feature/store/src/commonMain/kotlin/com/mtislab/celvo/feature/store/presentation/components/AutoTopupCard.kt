@@ -42,11 +42,17 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import celvo.feature.store.generated.resources.Res
+import celvo.feature.store.generated.resources.autotopup_description_intro
+import celvo.feature.store.generated.resources.autotopup_description_link
+import celvo.feature.store.generated.resources.autotopup_per_topup
+import celvo.feature.store.generated.resources.autotopup_select_amount
+import celvo.feature.store.generated.resources.autotopup_title
 import celvo.feature.store.generated.resources.ic_auto
 
 import com.mtislab.core.designsystem.components.cards.CelvoCard
 import com.mtislab.core.designsystem.theme.extended
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun AutoTopupCard(
@@ -102,7 +108,7 @@ fun AutoTopupCard(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "ავტომატური შევსება",
+                            text = stringResource(Res.string.autotopup_title),
                             style = MaterialTheme.typography.titleSmall.copy(fontSize = 16.sp),
                             color = MaterialTheme.colorScheme.extended.textPrimary
                         )
@@ -124,15 +130,17 @@ fun AutoTopupCard(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // --- Description Text ---
+                val intro = stringResource(Res.string.autotopup_description_intro)
+                val linkLabel = stringResource(Res.string.autotopup_description_link)
                 val descriptionText = buildAnnotatedString {
-                    append("ინტერნეტის ამოწურვის შემთხვევაში,\nშევსება მოხდება ავტომატურად. ")
+                    append(intro)
                     withStyle(
                         style = SpanStyle(
                             color = purpleLinkColor,
                             fontWeight = FontWeight.Bold
                         )
                     ) {
-                        append("გაიგე მეტი")
+                        append(linkLabel)
                     }
                 }
 
@@ -160,7 +168,7 @@ fun AutoTopupCard(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Text(
-                            text = "აირჩიე რაოდენობა",
+                            text = stringResource(Res.string.autotopup_select_amount),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.extended.textPrimary
                         )
@@ -183,7 +191,12 @@ fun AutoTopupCard(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Text(
-                            text = "თითო შევსება: ${selectedOption.label} - ${selectedOption.price} ${selectedOption.currency}",
+                            text = stringResource(
+                                Res.string.autotopup_per_topup,
+                                selectedOption.label.asString(),
+                                selectedOption.price,
+                                selectedOption.currency,
+                            ),
                             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
                             color = MaterialTheme.colorScheme.extended.textSecondary
                         )
@@ -216,7 +229,7 @@ fun TopupChip(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = option.label,
+            text = option.label.asString(),
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
             color = textColor
         )

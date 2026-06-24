@@ -1,6 +1,6 @@
 package com.mtislab.celvo.feature.profile.presentation.settings
 
-import AppTheme
+import com.mtislab.core.domain.model.AppTheme
 
 data class SettingsState(
     val appTheme: AppTheme = AppTheme.SYSTEM,

@@ -14,6 +14,7 @@
     <string name="action_retry">Try again</string>
     <string name="action_see_all">See All</string>
     <string name="select_esim">Select eSIM</string>
+    <string name="esim_label">eSIM</string>
     <string name="add_data">Add data</string>
     <string name="install">Install eSim</string>
     <string name="my_plans">My plans</string>
@@ -24,5 +25,95 @@
     <string name="packages_loading">Loading packages…</string>
     <string name="packages_load_failed">Could not load data</string>
     <string name="gauge_syncing">Syncing…</string>
+    <string name="search_clear">Clear</string>
 
+    <!-- Checkout screen -->
+    <string name="checkout_title">Checkout</string>
+    <string name="checkout_your_device">Your device</string>
+    <string name="checkout_esim_compatible">eSIM compatible</string>
+    <string name="checkout_payment_method">Payment method</string>
+    <string name="checkout_promo_code_label">Promo code</string>
+    <string name="checkout_package_price">Package price</string>
+    <string name="checkout_discount">Discount</string>
+    <string name="checkout_total">Total</string>
+    <string name="checkout_validity_info">Validity starts the moment the eSIM connects to the network.</string>
+    <string name="action_continue">Continue</string>
+    <string name="action_claim_promo">Claim this promo</string>
+
+    <!-- Checkout errors -->
+    <string name="error_3ds_redirect_failed">3DS redirect failed</string>
+    <string name="error_no_internet">No internet connection</string>
+    <string name="error_server_error_try_later">Server error, please try again later</string>
+    <string name="error_payment_failed">Payment failed, please try again</string>
+    <string name="error_enter_promo_code">Please enter a promo code</string>
+    <string name="error_promo_invalid">Promo code is invalid</string>
+    <string name="error_bad_request">Invalid data</string>
+    <string name="error_generic_try_again">An error occurred, please try again</string>
+    <string name="error_auth_failed">Authorization failed: %1$s</string>
+
+    <!-- Topup options -->
+    <string name="topup_other">Other</string>
+
+    <!-- Home / Store -->
+    <string name="home_data_stale_warning">Data may be out of date</string>
+    <string name="store_error_title">Something went wrong</string>
+    <string name="store_error_load_failed">Could not load data</string>
+    <string name="store_install_link_failed">Could not create installation link</string>
+
+    <!-- Marketing banner -->
+    <string name="banner_default_cta">Learn more</string>
+
+    <!-- Auto top-up -->
+    <string name="autotopup_title">Auto Top-Up</string>
+    <string name="autotopup_description_intro">When your data runs out,\ntop-up will be applied automatically. </string>
+    <string name="autotopup_description_link">Learn more</string>
+    <string name="autotopup_select_amount">Select amount</string>
+    <string name="autotopup_per_topup">Per top-up: %1$s - %2$s %3$s</string>
+
+    <!-- Packages -->
+    <string name="packages_tab_data">Data</string>
+    <string name="packages_tab_unlimited">Unlimited</string>
+    <string name="packages_pick_plan">Choose a plan</string>
+    <string name="packages_popular_badge">Popular</string>
+    <string name="packages_error_load_failed">Failed to load data</string>
+    <string name="packages_badge_5g">5G</string>
+    <string name="packages_badge_4g">4G</string>
+    <string name="packages_badge_countries">%1$d countries</string>
+    <string name="packages_subtitle_separator"> · </string>
+    <string name="packages_badge_discount">-%1$d%%</string>
+    <string name="packages_card_details_cd">View plan details</string>
+
+    <!-- Plan details sheet -->
+    <string name="plan_details_title">Plan details</string>
+    <string name="plan_details_description_title">About this plan</string>
+    <string name="plan_details_operators_title">Operators</string>
+    <string name="plan_details_coverage_title">Coverage</string>
+    <string name="plan_details_coverage_subtitle">%1$d countries</string>
+    <string name="plan_details_networks_title">Network</string>
+
+    <!-- Payment verification -->
+    <string name="verification_loading_title">Verifying payment…</string>
+    <string name="verification_loading_subtitle">Please wait</string>
+    <string name="verification_success_new_esim">eSIM purchased successfully!</string>
+    <string name="verification_success_topup">Top-up successful!</string>
+    <string name="verification_topup_no_install">Data added to your active eSIM. No installation needed</string>
+    <string name="verification_data_format">%1$d GB / %2$d days</string>
+    <string name="verification_install_esim">Install eSIM</string>
+    <string name="verification_installing">Installing…</string>
+    <string name="verification_my_esims">My eSIMs</string>
+    <string name="verification_install_failed">Installation failed</string>
+    <string name="verification_retry">Try again</string>
+    <string name="verification_confirmation_required">Confirmation required…</string>
+    <string name="verification_later">Later</string>
+    <string name="verification_back_to_home">Back to home</string>
+    <string name="verification_error_subtitle">Please try again or return to home</string>
+    <string name="verification_error_payment_failed">Payment failed</string>
+    <string name="verification_error_payment_refunded">Payment was refunded</string>
+    <string name="verification_error_timeout">Verification timed out, please try again</string>
+    <string name="verification_error_no_internet">No internet connection</string>
+    <string name="verification_error_server">Server error, please try again later</string>
+    <string name="verification_error_unauthorized">Authorization required</string>
+    <string name="verification_error_not_found">Order not found</string>
+    <string name="verification_error_request_timeout">Connection timed out</string>
+    <string name="verification_error_generic">Something went wrong, please try again</string>
 </resources>

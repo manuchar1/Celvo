@@ -2,6 +2,7 @@ package com.mtislab.celvo.feature.profile.data.repository
 
 import com.mtislab.celvo.feature.profile.data.dto.toDomain
 import com.mtislab.celvo.feature.profile.data.remote.ProfileService
+import com.mtislab.celvo.feature.profile.domain.model.DeleteAccountResult
 import com.mtislab.celvo.feature.profile.domain.model.UserProfile
 import com.mtislab.celvo.feature.profile.domain.repository.ProfileRepository
 import com.mtislab.core.domain.utils.DataError
@@ -16,5 +17,9 @@ class ProfileRepositoryImpl(
         return api.getUserProfile().map { dto ->
             dto.toDomain()
         }
+    }
+
+    override suspend fun deleteAccount(): DeleteAccountResult {
+        return api.deleteAccount()
     }
 }

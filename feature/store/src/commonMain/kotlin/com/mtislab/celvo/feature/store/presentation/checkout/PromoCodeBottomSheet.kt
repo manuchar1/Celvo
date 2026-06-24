@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import celvo.feature.store.generated.resources.Res
+import celvo.feature.store.generated.resources.action_claim_promo
 import celvo.feature.store.generated.resources.enter_code
 import celvo.feature.store.generated.resources.have_promo_or_referral_code
 import celvo.feature.store.generated.resources.promo_code
@@ -98,7 +99,7 @@ fun PromoCodeBottomSheet(
 
 
             CelvoButton(
-                text = "Claim this Promo",
+                text = stringResource(Res.string.action_claim_promo),
                 onClick = onApplyClick,
                 modifier = Modifier.fillMaxWidth(),
                 isLoading = isValidating,

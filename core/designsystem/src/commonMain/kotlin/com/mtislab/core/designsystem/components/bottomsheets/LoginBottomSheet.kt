@@ -1,5 +1,6 @@
 package com.mtislab.core.designsystem.components.bottomsheets
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,16 +24,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.celvo.core.designsystem.resources.Res
+import com.celvo.core.designsystem.resources.ic_apple_logo
+import com.celvo.core.designsystem.resources.ic_google_logo
 import com.celvo.core.designsystem.resources.ic_log_in
+import com.celvo.core.designsystem.resources.legal_consent_signin
+import com.celvo.core.designsystem.resources.legal_privacy_policy
+import com.celvo.core.designsystem.resources.legal_terms_of_service
+import com.celvo.core.designsystem.resources.login_sheet_apple
+import com.celvo.core.designsystem.resources.login_sheet_google
+import com.celvo.core.designsystem.resources.login_sheet_subtitle
+import com.celvo.core.designsystem.resources.login_sheet_title
 
 import com.mtislab.core.designsystem.components.buttons.CelvoButton
+import com.mtislab.core.designsystem.legal.LegalConsentText
+import com.mtislab.core.designsystem.legal.LegalLink
+import com.mtislab.core.designsystem.legal.LegalLinks
 import com.mtislab.core.designsystem.theme.CelvoPurple500
 import com.mtislab.core.designsystem.theme.PlusJakartaSans
 import com.mtislab.core.designsystem.theme.extended
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 
 
@@ -91,7 +105,7 @@ fun LoginBottomSheet(
 
             // 2. Texts
             Text(
-                text = "ანგარიშზე შესვლა",
+                text = stringResource(Res.string.login_sheet_title),
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontSize = 20.sp,
                     fontFamily = PlusJakartaSans,
@@ -103,7 +117,7 @@ fun LoginBottomSheet(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "აირჩიეთ შესვლის მეთოდი",
+                text = stringResource(Res.string.login_sheet_subtitle),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontSize = 16.sp,
                     fontFamily = PlusJakartaSans
@@ -118,11 +132,12 @@ fun LoginBottomSheet(
             if (isIos) {
                 // iOS: Apple First
                 CelvoButton(
-                    text = "Apple-ით შესვლა",
+                    text = stringResource(Res.string.login_sheet_apple),
+                    leadingIcon = painterResource(Res.drawable.ic_apple_logo),
                     onClick = onAppleClick,
-                    // icon = painterResource(Res.drawable.ic_apple), // 👈 დარწმუნდი რომ გაქვს
                     modifier = Modifier.fillMaxWidth(),
-                    containerColor = MaterialTheme.colorScheme.extended.inputBackground
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.extended.cardBorder)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -130,21 +145,30 @@ fun LoginBottomSheet(
 
             // Google (Always visible)
             CelvoButton(
-                text = "Google-ით შესვლა",
+                text = stringResource(Res.string.login_sheet_google),
+                leadingIcon = painterResource(Res.drawable.ic_google_logo),
                 onClick = onGoogleClick,
-                // icon = painterResource(Res.drawable.ic_google), // 👈 დარწმუნდი რომ გაქვს
                 modifier = Modifier.fillMaxWidth(),
-                containerColor = MaterialTheme.colorScheme.extended.inputBackground
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.extended.cardBorder)
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 4. Terms Footer
-            Text(
-                text = "გაგრძელებით თქვენ ეთანხმებით წესებს და პირობებს.",
+            // 4. Terms + Privacy footer with inline tappable links (opens in-app browser).
+            LegalConsentText(
+                template = stringResource(Res.string.legal_consent_signin),
+                links = listOf(
+                    LegalLink(
+                        label = stringResource(Res.string.legal_terms_of_service),
+                        url = LegalLinks.TERMS_OF_SERVICE
+                    ),
+                    LegalLink(
+                        label = stringResource(Res.string.legal_privacy_policy),
+                        url = LegalLinks.PRIVACY_POLICY
+                    ),
+                ),
                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-                color = MaterialTheme.colorScheme.extended.textTertiary,
-                textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
         }

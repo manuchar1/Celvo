@@ -1,74 +1,28 @@
 package com.mtislab.celvo.ui.components
 
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavDestination
-import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavHostController
-import com.mtislab.celvo.navigation.bottomNavRoutes
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
+import com.mtislab.celvo.navigation.TopLevelRoute
 
+/**
+ * Cross-platform bottom navigation bar.
+ *
+ * State and routing decisions live in [com.mtislab.celvo.ui.MainScreenScreen]
+ * (which owns the NavController). This composable is purely presentational:
+ * the platform actual decides *how* to render — Material3 NavigationBar on
+ * Android, UIVisualEffectView-backed glassmorphism on iOS.
+ *
+ * @param destinations top-level tab definitions (label, icon, [TopLevelRoute.route]).
+ * @param currentRoute the current NavDestination's route string (qualified
+ *  serialization name); used only to compute selection.
+ * @param onNavigate fired when the user taps a tab — the host is responsible
+ *  for invoking [androidx.navigation.NavController.navigate] with the right
+ *  popUpTo / restoreState semantics.
+ */
 @Composable
-fun CelvoBottomBar(
-    navController: NavHostController,
-    currentDestination: NavDestination?,
-    modifier: Modifier = Modifier
-) {
-    val containerColor = Color(0xFF25252D)
-    val indicatorColor = Color(0xFF4A4458)
-    val activeColor = Color(0xFFD0BCFF)
-    val inactiveColor = Color(0xFFC4C4C4)
-
-    NavigationBar(
-        modifier = modifier
-            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
-        containerColor = containerColor,
-        tonalElevation = 0.dp
-    ) {
-        bottomNavRoutes.forEach { item ->
-            val isSelected = currentDestination?.hierarchy?.any { it.hasRoute(item.route::class) } == true
-
-            NavigationBarItem(
-                selected = isSelected,
-                onClick = {
-                    navController.navigate(item.route) {
-                        // მთავარ ტაბებზე გადასვლისას სტეკის გასუფთავება
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                icon = {
-                    Icon(
-                        painter = painterResource(item.icon),
-                        contentDescription = stringResource(item.name)
-                    )
-                },
-                label = {
-                    Text(stringResource(item.name))
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    indicatorColor = indicatorColor,
-                    selectedIconColor = activeColor,
-                    selectedTextColor = activeColor,
-                    unselectedIconColor = inactiveColor,
-                    unselectedTextColor = inactiveColor
-                )
-            )
-        }
-    }
-}
+expect fun CelvoBottomBar(
+    destinations: List<TopLevelRoute<*>>,
+    currentRoute: String?,
+    onNavigate: (TopLevelRoute<*>) -> Unit,
+    modifier: Modifier = Modifier,
+)

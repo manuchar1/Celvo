@@ -18,7 +18,7 @@ package com.mtislab.core.domain.model
  */
 data class PackageInfoCardData(
     val dataAmountDisplay: String,
-    val validityDisplay: String,
+    val validityDisplay: String?,
     val countryName: String,
     val isoCode: String,
     val badgeType: BadgeType,

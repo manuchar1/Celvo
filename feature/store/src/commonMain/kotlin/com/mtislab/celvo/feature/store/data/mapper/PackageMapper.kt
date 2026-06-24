@@ -16,10 +16,16 @@ fun PackageDto.toDomain(): EsimPackage {
     val isUnlimitedPkg = this.dataAmount.contains("Unlimited", ignoreCase = true) ||
             this.dataAmount.contains("-1")
 
+    val resolvedCoverageCount = if (this.coverageCount > 0) {
+        this.coverageCount
+    } else {
+        this.coverageCountries.size
+    }
+
     return EsimPackage(
         id = this.id,
         name = this.name,
-        dataAmountDisplay = if (isUnlimitedPkg) "Unlimited Data" else this.dataAmount,
+        dataAmountDisplay = if (isUnlimitedPkg) "Unlimited" else this.dataAmount,
         validityDisplay = this.validity,
         price = this.price,
         currency = this.currency,
@@ -28,7 +34,18 @@ fun PackageDto.toDomain(): EsimPackage {
         isoCode = this.isoCode,
         originalPrice = if (this.originalPrice != null && this.originalPrice > 0) this.originalPrice else null,
         discountPercent = if (this.discountPercent != null && this.discountPercent > 0) this.discountPercent else null,
-        operators = this.operators.map { it.toDomain() }
+        operators = this.operators.map { it.toDomain() },
+        description = this.description?.takeIf { it.isNotBlank() },
+        networkTypes = this.networkTypes,
+        is5G = this.networkTypes.any { it.equals("5G", ignoreCase = true) },
+        coverageCountries = this.coverageCountries,
+        coverageCount = resolvedCoverageCount,
+        planTier = this.planTier
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?.takeUnless { it.matches(Regex("^[vV]\\d+$")) },
+        badgeText = this.badgeText?.takeIf { it.isNotBlank() },
+        badgeColor = this.badgeColor?.takeIf { it.isNotBlank() }
     )
 }
 

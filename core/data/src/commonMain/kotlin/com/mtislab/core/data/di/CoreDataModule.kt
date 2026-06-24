@@ -3,9 +3,12 @@ package com.mtislab.core.data.di
 import com.mtislab.core.data.BuildKonfig
 import com.mtislab.core.data.auth.SupabaseDeepLinkHandler
 import com.mtislab.core.data.logging.KermitLogger
+import com.mtislab.core.data.networking.AuthTokenInvalidator
 import com.mtislab.core.data.networking.HttpClientFactory
+import com.mtislab.core.data.networking.KtorAuthTokenInvalidator
 import com.mtislab.core.data.session.DataStoreTokenStorage
 import com.mtislab.core.data.session.SessionManager
+import com.mtislab.core.data.session.ThemePreferences
 import com.mtislab.core.data.session.TokenStorage
 import com.mtislab.core.domain.auth.SessionController
 import com.mtislab.core.domain.esim.EsimLinkGenerator
@@ -49,12 +52,18 @@ val coreDataModule = module {
     }
 
     singleOf(::DataStoreTokenStorage) bind TokenStorage::class
+    singleOf(::ThemePreferences)
+
+    // Lazily wraps the HttpClient (which itself depends on SessionManager) so
+    // SessionManager can clear the cached bearer token without a DI cycle.
+    single<AuthTokenInvalidator> { KtorAuthTokenInvalidator(httpClient = { get() }) }
 
     single {
         SessionManager(
             tokenStorage = get(),
             supabase = get(),
-            logger = get()
+            logger = get(),
+            tokenInvalidator = get()
         )
     } bind SessionController::class
 

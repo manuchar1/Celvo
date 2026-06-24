@@ -2,48 +2,34 @@ package com.mtislab.core.data.payment
 
 import android.content.Context
 import com.google.android.gms.wallet.IsReadyToPayRequest
-import com.google.android.gms.wallet.PaymentsClient
-import com.google.android.gms.wallet.Wallet
-import com.google.android.gms.wallet.WalletConstants
+import com.mtislab.core.designsystem.components.payment.GooglePayConfig
 import com.mtislab.core.domain.payment.NativePayManager
 import kotlinx.coroutines.tasks.await
-import org.json.JSONArray
-import org.json.JSONObject
 
+/**
+ * Android availability check for Google Pay.
+ *
+ * Delegates both the PaymentsClient creation and the isReadyToPay JSON to
+ * [GooglePayConfig] — the same object that backs the Composable PayButton
+ * launcher. This guarantees a SINGLE source of truth for:
+ *   - Google Pay environment (TEST / PRODUCTION)
+ *   - Allowed card networks (VISA / MasterCard / Amex)
+ *   - Allowed auth methods (PAN_ONLY / CRYPTOGRAM_3DS)
+ *
+ * When flipping to production, [GooglePayConfig.createPaymentsClient] is the
+ * ONLY place to update — this class will automatically pick up the change.
+ */
 class GooglePayManagerAndroid(
     context: Context
 ) : NativePayManager {
 
-    private val paymentsClient: PaymentsClient = Wallet.getPaymentsClient(
-        context,
-        Wallet.WalletOptions.Builder()
-            .setEnvironment(WalletConstants.ENVIRONMENT_TEST)
-            .build()
-    )
+    private val paymentsClient = GooglePayConfig.createPaymentsClient(context)
 
     override suspend fun isAvailable(): Boolean {
         return try {
-            val json = JSONObject().apply {
-                put("apiVersion", 2)
-                put("apiVersionMinor", 0)
-                put("allowedPaymentMethods", JSONArray().put(
-                    JSONObject().apply {
-                        put("type", "CARD")
-                        put("parameters", JSONObject().apply {
-                            put("allowedAuthMethods", JSONArray().apply {
-                                put("PAN_ONLY")
-                                put("CRYPTOGRAM_3DS")
-                            })
-                            put("allowedCardNetworks", JSONArray().apply {
-                                put("VISA")
-                                put("MASTERCARD")
-                                put("AMEX")
-                            })
-                        })
-                    }
-                ))
-            }
-            val request = IsReadyToPayRequest.fromJson(json.toString())
+            val request = IsReadyToPayRequest.fromJson(
+                GooglePayConfig.isReadyToPayJson().toString()
+            )
             paymentsClient.isReadyToPay(request).await()
         } catch (e: Exception) {
             false

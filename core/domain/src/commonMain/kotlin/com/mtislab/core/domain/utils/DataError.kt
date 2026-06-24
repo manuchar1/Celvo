@@ -23,3 +23,11 @@ sealed interface DataError : Error {
         UNKNOWN
     }
 }
+
+/**
+ * True when the failure was caused by a lack of internet connectivity rather
+ * than a server/API fault. Drives the choice between the no-internet
+ * placeholder (auto-recovers on reconnect) and the generic error placeholder.
+ */
+val DataError.isConnectivityError: Boolean
+    get() = this == DataError.Remote.NO_INTERNET

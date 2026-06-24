@@ -1,6 +1,5 @@
 <resources>
 
-
     <string name="tab_country">ქვეყანა</string>
     <string name="tab_region">რეგიონი</string>
 
@@ -13,4 +12,24 @@
     <string name="section_regional_plans">რეგიონალური პაკეტები</string>
     <string name="action_retry">სცადეთ თავიდან</string>
     <string name="action_see_all">მეტის ნახვა</string>
+
+    <string name="myesim_title">ჩემი E-Sim</string>
+    <string name="myesim_add">დამატება</string>
+    <string name="myesim_add_new">ახალი eSIM</string>
+    <string name="myesim_empty_title">აქ გამოჩნდება შეძენილი eSIM</string>
+    <string name="myesim_empty_message">დამატეთ და მართეთ რამდენიმე eSIM სხვადასხვა მოწყობილობაზე მარტივად.</string>
+    <string name="myesim_error_title">შეცდომა მოხდა</string>
+    <string name="myesim_error_message">eSIM-ების ჩატვირთვა ვერ მოხერხდა. გთხოვთ სცადოთ თავიდან.</string>
+    <string name="myesim_retry">სცადე თავიდან</string>
+    <string name="myesim_purchased_packages">შეძენილი პაკეტები:</string>
+    <string name="myesim_install">ინსტალაცია</string>
+    <string name="myesim_install_not_ready">ეს eSIM მზად არ არის ინსტალაციისთვის.</string>
+    <string name="myesim_install_failed">eSIM-ის ინსტალატორი ვერ გაიხსნა. გთხოვთ სცადოთ თავიდან.</string>
+    <string name="myesim_packages">პაკეტები</string>
+    <string name="myesim_details">დეტალები</string>
+    <string name="esim_details_load_error">პაკეტის დეტალების ჩატვირთვა ვერ მოხერხდა. გთხოვთ სცადოთ თავიდან.</string>
+    <string name="esim_details_no_active">აქტიური პაკეტები არ არის</string>
+    <string name="esim_details_no_history">ისტორია არ არის</string>
+    <string name="esim_details_days_left">დღე დარჩენილია</string>
+    <string name="esim_details_remaining">დარჩენილი</string>
 </resources>

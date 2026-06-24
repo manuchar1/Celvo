@@ -32,4 +32,37 @@
     <string name="offline_instructions_step4_body">დანიშნულების ადგილას ჩასვლისას, ჩართეთ მონაცემთა როუმინგი eSIM ხაზისთვის მოწყობილობის პარამეტრებში. თქვენი მონაცემთა პაკეტი ავტომატურად ამოქმედდება.</string>
     <string name="offline_instructions_note_title">მნიშვნელოვანი</string>
     <string name="offline_instructions_note_body">თქვენი მოწყობილობა უნდა იყოს eSIM ტექნოლოგიის მხარდამჭერი. 2018 წლის შემდეგ გამოშვებული თანამედროვე სმარტფონების უმეტესობა მხარს უჭერს eSIM-ს. პრობლემის შემთხვევაში, გთხოვთ დაგვიკავშირდეთ.</string>
+
+    <!-- Login bottom sheet -->
+    <string name="login_sheet_title">ანგარიშზე შესვლა</string>
+    <string name="login_sheet_subtitle">აირჩიეთ შესვლის მეთოდი</string>
+    <string name="login_sheet_apple">Apple-ით შესვლა</string>
+    <string name="login_sheet_google">Google-ით შესვლა</string>
+
+    <!-- Legal documents (Terms of Service / Privacy Policy) -->
+    <string name="legal_section_title">სამართლებრივი</string>
+    <string name="legal_terms_of_service">მომსახურების პირობები</string>
+    <string name="legal_privacy_policy">კონფიდენციალურობის პოლიტიკა</string>
+    <string name="legal_consent_signin">გაგრძელებით თქვენ ეთანხმებით ჩვენს %1$s და %2$s.</string>
+    <string name="legal_consent_checkout">შეძენით თქვენ ეთანხმებით %1$s. eSIM მონაცემები ციფრული პროდუქტია — გააქტიურება იწყებს მომსახურების მიწოდებას და თქვენ უარს ამბობთ ხელშეკრულებიდან გასვლის კანონიერ უფლებაზე.</string>
+    <string name="legal_privacy_delete_notice">იხილეთ, როგორ ვამუშავებთ და ვშლით თქვენს მონაცემებს ჩვენს %1$s-ში.</string>
+
+    <!-- Product info card -->
+    <string name="product_info_speed">სიჩქარე</string>
+    <string name="product_info_networks">ქსელები</string>
+
+    <!-- Unlimited bundle rendering -->
+    <string name="bundle_unlimited_label">ულიმიტო</string>
+    <string name="bundle_unlimited_with_glyph">∞ ულიმიტო</string>
+    <string name="bundle_throttle_full_speed">%1$s სრული სიჩქარით</string>
+    <string name="bundle_throttle_per_day_full_speed">%1$s / დღეში სრული სიჩქარით</string>
+    <string name="bundle_throttle_then_speed">შემდეგ %1$s</string>
+    <string name="bundle_also_works_in">ასევე მუშაობს:</string>
+
+    <!-- Native payment errors -->
+    <string name="payment_token_extraction_failed">ტოკენის ამოღება ვერ მოხერხდა</string>
+    <string name="payment_no_data_received">გადახდის მონაცემები ვერ მოიძებნა</string>
+    <string name="payment_no_response">Google Pay-დან პასუხი არ მიღებულა</string>
+    <string name="payment_google_pay_error">Google Pay შეცდომა</string>
+    <string name="payment_apple_pay_unavailable">Apple Pay ვერ გაიხსნა</string>
 </resources>

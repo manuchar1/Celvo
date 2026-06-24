@@ -1,9 +1,7 @@
 package com.mtislab.celvo.feature.store.di
 
 import com.mtislab.celvo.feature.store.data.remote.StoreRemoteService
-import com.mtislab.celvo.feature.store.data.repository.PromoClaimRepositoryImpl
 import com.mtislab.celvo.feature.store.data.repository.StoreRepositoryImpl
-import com.mtislab.celvo.feature.store.domain.repository.PromoClaimRepository
 import com.mtislab.celvo.feature.store.domain.repository.StoreRepository
 import com.mtislab.celvo.feature.store.presentation.store.StoreViewModel
 import com.mtislab.celvo.feature.store.presentation.checkout.CheckoutViewModel
@@ -23,7 +21,6 @@ import org.koin.dsl.module
 val storeModule = module {
     singleOf(::StoreRemoteService)
     single { StoreRepositoryImpl(get()) } bind StoreRepository::class bind PaymentVerificationRepository::class
-    singleOf(::PromoClaimRepositoryImpl).bind<PromoClaimRepository>()
 
     factoryOf(::VerifyPaymentUseCase)
 
@@ -31,11 +28,12 @@ val storeModule = module {
     viewModelOf(::PackagesScreenViewModel)
     viewModelOf(::CheckoutViewModel)
     viewModelOf(::PaymentVerificationViewModel)
-    viewModel { (initialTab: Route.SearchTab, focusSearch: Boolean) ->
+    viewModel { (initialTab: Route.SearchTab, focusSearch: Boolean, filterIsoCodes: String) ->
         SearchViewModel(
             repository = get(),
             initialTab = initialTab,
             initialFocus = focusSearch,
+            filterIsoCodes = filterIsoCodes
         )
     }
 }
