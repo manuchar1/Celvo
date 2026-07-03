@@ -8,12 +8,14 @@ plugins {
 kotlin {
     jvm()
 
+    // cocoapods plugin is used ONLY to generate the GoogleSignIn cinterop for
+    // iosMain. This module must NOT be consumed as a pod by iosApp/Podfile —
+    // its Kotlin code reaches the app inside the single ComposeApp framework.
     cocoapods {
         summary = "Google Sign In Framework"
         homepage = "https://github.com/google/GoogleSignIn-iOS"
         version = "1.0"
         ios.deploymentTarget = "14.0"
-        podfile = project.file("../../iosApp/Podfile")
 
         pod("GoogleSignIn") {
             version = "9.1.0"

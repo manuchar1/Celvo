@@ -5,6 +5,10 @@ platform :ios, '14.0'
 target 'iosApp' do
   use_frameworks!
 
-  pod 'designsystem', :path => '../core/designsystem'
+  # NOTE: never add a Kotlin module (designsystem, composeApp, ...) as a pod here.
+  # Kotlin code ships ONLY inside the static ComposeApp framework embedded by the
+  # ':composeApp:embedAndSignAppleFrameworkForXcode' Xcode build phase. A second
+  # Kotlin framework means two Kotlin runtimes in one process -> malloc corruption
+  # crash on launch in release builds (App Store rejection 2026-07-02).
   pod 'GoogleSignIn', '~> 9.1.0'
 end
