@@ -7,8 +7,8 @@
       "namespace": "android_app",
       "package_name": "com.mtislab.celvo",
       "sha256_cert_fingerprints": [
-        "REPLACE_WITH_UPLOAD_KEY_SHA256",
-        "REPLACE_WITH_PLAY_APP_SIGNING_SHA256"
+        "AE:05:74:31:A5:64:41:D5:44:68:D2:2B:33:5A:C3:BF:3B:59:21:64:39:78:81:DE:B6:93:7D:10:E4:AC:E9:C8",
+        "28:73:D5:08:58:AE:2C:ED:09:38:51:61:7F:B6:DC:5A:70:A2:22:2F:F9:EB:F0:A5:4B:50:2D:14:96:87:A9:E0"
       ]
     }
   }
