@@ -48,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -72,7 +73,7 @@ import celvo.feature.store.generated.resources.ic_info_circle
 import celvo.feature.store.generated.resources.ic_phone
 import celvo.feature.store.generated.resources.ic_promo_code
 import com.celvo.core.designsystem.resources.ic_apple_logo
-import com.celvo.core.designsystem.resources.ic_google_logo
+import com.celvo.core.designsystem.resources.ic_google_pay_mark
 import com.celvo.core.designsystem.resources.ic_left_arrow
 import com.celvo.core.designsystem.resources.legal_consent_checkout
 import com.celvo.core.designsystem.resources.legal_terms_of_service
@@ -440,11 +441,14 @@ fun PaymentMethodsSection(
         // --- Native Wallet (Google Pay / Apple Pay) ---
         if (isWalletAvailable) {
             PaymentMethodItem(
-                icon = if (isAndroid) CoreRes.drawable.ic_google_logo else CoreRes.drawable.ic_apple_logo,
+                // Official Google Pay mark (developers.google.com brand assets) —
+                // it ships with its own white pill + contour, so render it unframed.
+                icon = if (isAndroid) CoreRes.drawable.ic_google_pay_mark else CoreRes.drawable.ic_apple_logo,
                 title = if (isAndroid) "Google Pay" else "Apple Pay",
                 subtitle = null,
                 isSelected = selectedMethod == PaymentMethod.NATIVE_WALLET,
                 onClick = { onSelect(PaymentMethod.NATIVE_WALLET) },
+                framed = !isAndroid,
             )
 
             HorizontalDivider(
@@ -474,7 +478,7 @@ fun PaymentMethodItem(
     subtitle: String? = null,
     isSelected: Boolean,
     onClick: () -> Unit,
-
+    framed: Boolean = true,
 ) {
     Row(
         modifier = Modifier
@@ -483,22 +487,35 @@ fun PaymentMethodItem(
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(width = 34.dp, height = 24.dp)
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(6.dp)
+        if (framed) {
+            // Same badge treatment as the official Google Pay mark above:
+            // white stadium pill + #747775 contour (Google's mark stroke color),
+            // fixed colors in both themes so the two rows always match.
+            Box(
+                modifier = Modifier
+                    .size(width = 34.dp, height = 18.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .border(
+                        width = 1.dp,
+                        color = Color(0xFF747775),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(icon),
+                    contentDescription = null,
+                    colorFilter = ColorFilter.tint(Color(0xFF3C4043)),
+                    modifier = Modifier.size(width = 16.dp, height = 11.dp)
                 )
-                .clip(RoundedCornerShape(6.dp)),
-               // .background(if (isApplePay) Color.Black else Color.White),
-            contentAlignment = Alignment.Center
-        ) {
+            }
+        } else {
+            // Payment marks (e.g. Google Pay) come with their own contour.
             Image(
                 painter = painterResource(icon),
                 contentDescription = null,
-                modifier = Modifier.size(width = 24.dp, height = 14.dp)
+                modifier = Modifier.size(width = 34.dp, height = 18.dp)
             )
         }
         Spacer(modifier = Modifier.width(12.dp))

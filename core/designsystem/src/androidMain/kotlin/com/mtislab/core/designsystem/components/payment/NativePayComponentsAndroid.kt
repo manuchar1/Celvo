@@ -4,9 +4,11 @@ import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import com.celvo.core.designsystem.resources.Res
 import com.celvo.core.designsystem.resources.payment_google_pay_error
@@ -28,12 +30,18 @@ actual fun NativePayButton(
     enabled: Boolean,
     modifier: Modifier
 ) {
+    // Google Pay brand guidelines: black (Dark) button on light backgrounds,
+    // white (Light) button on dark backgrounds; matching combos fail GPay
+    // integration review (flagged by Google Pay API support, 2026-07-03).
+    // Celvo has an in-app theme override, so the button must follow the
+    // theme's actual background — not the system theme.
+    val onDarkBackground = MaterialTheme.colorScheme.background.luminance() < 0.5f
     PayButton(
         onClick = onClick,
         allowedPaymentMethods = GooglePayConfig.isReadyToPayJson()
             .getJSONArray("allowedPaymentMethods")
             .toString(),
-        theme = ButtonTheme.Dark,
+        theme = if (onDarkBackground) ButtonTheme.Light else ButtonTheme.Dark,
         type = ButtonType.Pay,
         modifier = modifier,
         enabled = enabled
