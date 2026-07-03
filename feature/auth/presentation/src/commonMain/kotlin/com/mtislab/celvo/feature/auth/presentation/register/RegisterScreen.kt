@@ -39,8 +39,9 @@ import celvo.feature.auth.presentation.generated.resources.onboarding_page1_subt
 import celvo.feature.auth.presentation.generated.resources.onboarding_page1_title
 import celvo.feature.auth.presentation.generated.resources.onboarding_page2_subtitle
 import celvo.feature.auth.presentation.generated.resources.onboarding_page2_title
-import celvo.feature.auth.presentation.generated.resources.onboarding_page3_subtitle
-import celvo.feature.auth.presentation.generated.resources.onboarding_page3_title
+// Page 3 temporarily disabled — restore these together with pageCount = 3:
+// import celvo.feature.auth.presentation.generated.resources.onboarding_page3_subtitle
+// import celvo.feature.auth.presentation.generated.resources.onboarding_page3_title
 import celvo.feature.auth.presentation.generated.resources.register_apple_sign_in
 import celvo.feature.auth.presentation.generated.resources.register_google_sign_in
 import com.celvo.core.designsystem.resources.Res
@@ -126,7 +127,8 @@ fun RegisterScreen(
     onAppleSignInClick: () -> Unit,
     onSkipClick: () -> Unit
 ) {
-    val pagerState = rememberPagerState(pageCount = { 3 })
+    // Page 3 temporarily disabled — restore with pageCount = { 3 }.
+    val pagerState = rememberPagerState(pageCount = { 2 })
 
 
     Scaffold(
@@ -202,7 +204,7 @@ fun RegisterScreen(
                     Spacer(modifier = Modifier.height(32.dp))
 
                     PagerIndicator(
-                        pageCount = 3,
+                        pageCount = 2,
                         currentPage = pagerState.currentPage)
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -211,10 +213,11 @@ fun RegisterScreen(
                     val (title, subtitle) = when (pagerState.currentPage) {
                         0 -> stringResource(AuthRes.string.onboarding_page1_title) to
                                 stringResource(AuthRes.string.onboarding_page1_subtitle)
-                        1 -> stringResource(AuthRes.string.onboarding_page2_title) to
+                        // Page 3 temporarily disabled — restore together with pageCount = 3:
+                        // 2 -> stringResource(AuthRes.string.onboarding_page3_title) to
+                        //         stringResource(AuthRes.string.onboarding_page3_subtitle)
+                        else -> stringResource(AuthRes.string.onboarding_page2_title) to
                                 stringResource(AuthRes.string.onboarding_page2_subtitle)
-                        else -> stringResource(AuthRes.string.onboarding_page3_title) to
-                                stringResource(AuthRes.string.onboarding_page3_subtitle)
                     }
 
                     Column(

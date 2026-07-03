@@ -8,10 +8,17 @@
     <!-- Onboarding pager -->
     <string name="onboarding_page1_title">Borderless connection\nin any country</string>
     <string name="onboarding_page1_subtitle">Choose a country and activate eSIM\nin seconds.</string>
-    <string name="onboarding_page2_title">Easy setup\nwith QR code</string>
-    <string name="onboarding_page2_subtitle">Scan and connect to the network\neffortlessly.</string>
+    <string name="onboarding_page2_title">Three taps -\nand you're online</string>
+    <string name="onboarding_page2_subtitle">Pick, pay, connect. Your eSIM\nis ready in under a minute.</string>
+    <!-- Page 3 temporarily disabled (kept for restore) -->
     <string name="onboarding_page3_title">Best prices\nwithout roaming</string>
     <string name="onboarding_page3_subtitle">Save money and enjoy\nlocal rates.</string>
+
+    <!-- Onboarding page 2 — activation steps grid -->
+    <string name="onboarding_step_pick_plan">Pick a plan</string>
+    <string name="onboarding_step_pay">Pay in one tap</string>
+    <string name="onboarding_step_online">Online in seconds</string>
+    <string name="onboarding_step_no_roaming">No roaming fees</string>
 
     <!-- Sign-in CTAs -->
     <string name="register_apple_sign_in">Sign in with Apple</string>

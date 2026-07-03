@@ -8,10 +8,17 @@
     <!-- Onboarding pager -->
     <string name="onboarding_page1_title">უსაზღვრო კავშირი\nნებისმიერ ქვეყანაში</string>
     <string name="onboarding_page1_subtitle">აირჩიე ქვეყანა და გაააქტიურე eSIM\nრამდენიმე წამში.</string>
-    <string name="onboarding_page2_title">მარტივი ინსტალაცია\nQR კოდით</string>
-    <string name="onboarding_page2_subtitle">დაასკანერე და ჩაერთე ქსელში\nზედმეტი ძალისხმევის გარეშე.</string>
+    <string name="onboarding_page2_title">სამი შეხება —\nდა უკვე ქსელში ხარ</string>
+    <string name="onboarding_page2_subtitle">აირჩიე, გადაიხადე, დაუკავშირდი.\nშენი eSIM ერთ წუთში მზადაა.</string>
+    <!-- Page 3 temporarily disabled (kept for restore) -->
     <string name="onboarding_page3_title">საუკეთესო ფასები\nროუმინგის გარეშე</string>
     <string name="onboarding_page3_subtitle">დაზოგე თანხა და ისარგებლე\nადგილობრივი ტარიფებით.</string>
+
+    <!-- Onboarding page 2 — activation steps grid -->
+    <string name="onboarding_step_pick_plan">აირჩიე პაკეტი</string>
+    <string name="onboarding_step_pay">გადაიხადე მარტივად</string>
+    <string name="onboarding_step_online">ქსელში წამებში</string>
+    <string name="onboarding_step_no_roaming">როუმინგის გარეშე</string>
 
     <!-- Sign-in CTAs -->
     <string name="register_apple_sign_in">Apple-ით შესვლა</string>
