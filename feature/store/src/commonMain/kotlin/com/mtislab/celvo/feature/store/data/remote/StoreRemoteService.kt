@@ -14,6 +14,7 @@ import com.mtislab.celvo.feature.store.data.dto.PromoValidationResponseDto
 import com.mtislab.celvo.feature.store.data.dto.RegionsResponseDto
 import com.mtislab.celvo.feature.store.data.dto.WalletPaymentRequestDto
 import com.mtislab.celvo.feature.store.data.dto.WalletPaymentResponseDto
+import com.mtislab.celvo.feature.store.data.dto.WalletQuoteResponseDto
 import com.mtislab.core.data.networking.get
 import com.mtislab.core.data.networking.post
 import com.mtislab.core.domain.utils.DataError
@@ -75,6 +76,13 @@ class StoreRemoteService(
         )
     }
 
+
+    suspend fun getWalletQuote(sku: String): Resource<WalletQuoteResponseDto, DataError.Remote> {
+        return httpClient.get(
+            route = "/api/v1/payments/wallet-quote",
+            queryParams = mapOf("sku" to sku)
+        )
+    }
 
     suspend fun processWalletPayment(
         request: WalletPaymentRequestDto

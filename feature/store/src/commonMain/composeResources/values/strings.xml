@@ -45,6 +45,7 @@
     <string name="error_no_internet">No internet connection</string>
     <string name="error_server_error_try_later">Server error, please try again later</string>
     <string name="error_payment_failed">Payment failed, please try again</string>
+    <string name="error_price_updated_retry">The price was updated — you were not charged. Please confirm the payment again.</string>
     <string name="error_enter_promo_code">Please enter a promo code</string>
     <string name="error_promo_invalid">Promo code is invalid</string>
     <string name="error_bad_request">Invalid data</string>

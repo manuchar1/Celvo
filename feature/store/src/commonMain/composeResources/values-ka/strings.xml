@@ -47,6 +47,7 @@
     <string name="error_no_internet">ინტერნეტ კავშირი არ არის</string>
     <string name="error_server_error_try_later">სერვერის შეცდომა, სცადეთ მოგვიანებით</string>
     <string name="error_payment_failed">გადახდა ვერ მოხერხდა, სცადეთ თავიდან</string>
+    <string name="error_price_updated_retry">ფასი განახლდა — თანხა არ ჩამოგეჭრათ. გთხოვთ, თავიდან დაადასტუროთ გადახდა.</string>
     <string name="error_enter_promo_code">შეიყვანეთ პრომოკოდი</string>
     <string name="error_promo_invalid">პრომოკოდი არასწორია</string>
     <string name="error_bad_request">არასწორი მონაცემები</string>

@@ -10,6 +10,7 @@ import com.mtislab.celvo.feature.store.domain.model.StoreCountriesData
 import com.mtislab.celvo.feature.store.domain.model.StoreItem
 import com.mtislab.celvo.feature.store.domain.model.WalletPaymentRequest
 import com.mtislab.celvo.feature.store.domain.model.WalletPaymentResult
+import com.mtislab.celvo.feature.store.domain.model.WalletQuote
 import com.mtislab.core.domain.model.ActiveEsimHome
 import com.mtislab.core.domain.model.EsimHomePackage
 import com.mtislab.core.domain.payment.PaymentVerificationRepository
@@ -44,6 +45,12 @@ interface StoreRepository : PaymentVerificationRepository {
     ): Resource<PromoValidationResult, DataError.Remote>
 
 
+
+    /**
+     * Server-authoritative GEL amount the wallet sheet must authorize for [sku].
+     * Always fetched fresh right before opening the sheet — see [WalletQuote].
+     */
+    suspend fun getWalletQuote(sku: String): Resource<WalletQuote, DataError.Remote>
 
     suspend fun processWalletPayment(
         request: WalletPaymentRequest

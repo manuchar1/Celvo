@@ -1,6 +1,21 @@
 package com.mtislab.celvo.feature.store.domain.model
 
 
+/**
+ * Server-authoritative charge for a wallet (Apple Pay / Google Pay) payment.
+ *
+ * The wallet token is cryptographically bound to the amount/currency the user
+ * authorizes on the sheet, and the processor (Georgian Card) compares them to
+ * the BOG order — so the sheet MUST be opened with exactly this amount, and
+ * the same values must be sent back on /wallet-pay. Opening the sheet with the
+ * catalogue USD price fails every payment with AMOUNT_MISMATCH.
+ */
+data class WalletQuote(
+    val sku: String,
+    val amount: Double,
+    val currency: String
+)
+
 data class WalletPaymentRequest(
     val sku: String,
     val bundleName: String,

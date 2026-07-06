@@ -4,10 +4,17 @@ import celvo.feature.store.generated.resources.Res
 import celvo.feature.store.generated.resources.topup_other
 import com.mtislab.celvo.feature.store.domain.model.EsimPackage
 import com.mtislab.celvo.feature.store.domain.model.PromoValidationResult
+import com.mtislab.celvo.feature.store.domain.model.WalletQuote
 import com.mtislab.core.presentation.util.UiText
 
 data class CheckoutState(
     val packageDetails: EsimPackage? = null,
+
+    // --- Wallet quote ---
+    // Server-authoritative GEL amount the wallet sheet authorized. Set when the
+    // sheet is launched; /wallet-pay must send exactly these values. Cleared on
+    // payment failure so a retry always re-fetches a fresh quote.
+    val walletQuote: WalletQuote? = null,
 
     // --- Destination Context (for promo validation) ---
     val countryIso: String = "",

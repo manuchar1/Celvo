@@ -20,3 +20,17 @@ data class WalletPaymentResponseDto(
     @SerialName("status") val status: String,
     @SerialName("redirectUrl") val redirectUrl: String? = null
 )
+
+/**
+ * Server-authoritative amount for the wallet sheet, from
+ * GET /api/v1/payments/wallet-quote. The sheet must authorize exactly
+ * [amount] [currency]; /wallet-pay re-validates and rejects drift with 409.
+ */
+@Serializable
+data class WalletQuoteResponseDto(
+    @SerialName("sku") val sku: String,
+    @SerialName("amount") val amount: Double,
+    @SerialName("currency") val currency: String,
+    @SerialName("usdPrice") val usdPrice: Double? = null,
+    @SerialName("exchangeRate") val exchangeRate: Double? = null
+)

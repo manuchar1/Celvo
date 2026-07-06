@@ -15,6 +15,7 @@ import com.mtislab.celvo.feature.store.domain.model.StoreCountriesData
 import com.mtislab.celvo.feature.store.domain.model.StoreItem
 import com.mtislab.celvo.feature.store.domain.model.WalletPaymentRequest
 import com.mtislab.celvo.feature.store.domain.model.WalletPaymentResult
+import com.mtislab.celvo.feature.store.domain.model.WalletQuote
 import com.mtislab.celvo.feature.store.domain.repository.StoreRepository
 import com.mtislab.core.domain.model.ActiveEsimHome
 import com.mtislab.core.domain.model.EsimHomePackage
@@ -125,6 +126,16 @@ class StoreRepositoryImpl(
         return remoteService.validatePromo(requestDto).map { it.toDomain() }
     }
 
+
+    override suspend fun getWalletQuote(sku: String): Resource<WalletQuote, DataError.Remote> {
+        return remoteService.getWalletQuote(sku).map { dto ->
+            WalletQuote(
+                sku = dto.sku,
+                amount = dto.amount,
+                currency = dto.currency
+            )
+        }
+    }
 
     override suspend fun processWalletPayment(
         request: WalletPaymentRequest

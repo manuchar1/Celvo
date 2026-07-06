@@ -15,6 +15,7 @@ import celvo.feature.store.generated.resources.error_enter_promo_code
 import celvo.feature.store.generated.resources.error_generic_try_again
 import celvo.feature.store.generated.resources.error_no_internet
 import celvo.feature.store.generated.resources.error_payment_failed
+import celvo.feature.store.generated.resources.error_price_updated_retry
 import celvo.feature.store.generated.resources.error_promo_invalid
 import celvo.feature.store.generated.resources.error_server_error_try_later
 import com.mtislab.celvo.feature.store.domain.model.PaymentInitiateRequest
@@ -35,6 +36,7 @@ import com.mtislab.core.domain.repository.AuthRepository
 import com.mtislab.core.domain.utils.DataError
 import com.mtislab.core.domain.utils.Resource
 import com.mtislab.core.presentation.util.UiText
+import kotlin.math.roundToInt
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -186,22 +188,52 @@ class CheckoutViewModel(
         val pkg = currentState.packageDetails ?: return
 
         when (currentState.selectedPaymentMethod) {
-            PaymentMethod.NATIVE_WALLET -> {
-                // Step 1: Set loading, emit event for UI to launch Google Pay sheet
-                _state.update { it.copy(isLoading = true, error = null) }
-                val amountCents = (currentState.effectivePrice * 100).toInt()
-                viewModelScope.launch {
+            PaymentMethod.NATIVE_WALLET -> launchWalletPayment(pkg.id)
+            PaymentMethod.CARD -> initiateCardPayment()
+        }
+    }
+
+    /**
+     * Step 1 of the wallet flow: fetch the server-authoritative GEL amount and
+     * open the native sheet with exactly it.
+     *
+     * The wallet token is cryptographically bound to the amount/currency the
+     * user authorizes on the sheet, and Georgian Card compares them against the
+     * BOG order (which settles the authoritative GEL amount) — opening the
+     * sheet with the catalogue USD price fails every payment with
+     * AMOUNT_MISMATCH. The quote is fetched fresh on every attempt so a stale
+     * NBG rate can't linger; /wallet-pay re-validates and answers 409 if the
+     * rate rolls over between the quote and the payment.
+     *
+     * Step 2 continues when WalletTokenReceived action arrives.
+     */
+    private fun launchWalletPayment(sku: String) {
+        _state.update { it.copy(isLoading = true, error = null) }
+        viewModelScope.launch {
+            when (val result = storeRepository.getWalletQuote(sku)) {
+                is Resource.Success -> {
+                    val quote = result.data
+                    _state.update { it.copy(walletQuote = quote) }
                     _events.send(
                         CheckoutEvent.LaunchNativeWalletPayment(
-                            amountCents = amountCents,
-                            currencyCode = pkg.currency.toIso4217CurrencyCode()
+                            amountCents = (quote.amount * 100).roundToInt(),
+                            currencyCode = quote.currency
                         )
                     )
                 }
-                // Step 2 continues when WalletTokenReceived action arrives
-            }
 
-            PaymentMethod.CARD -> initiateCardPayment()
+                is Resource.Failure -> {
+                    _state.update {
+                        it.copy(isLoading = false, error = result.error.toString())
+                    }
+                    val messageRes = when (result.error) {
+                        DataError.Remote.NO_INTERNET -> Res.string.error_no_internet
+                        DataError.Remote.SERVER_ERROR -> Res.string.error_server_error_try_later
+                        else -> Res.string.error_payment_failed
+                    }
+                    _events.send(CheckoutEvent.ShowError(UiText.Resource(messageRes)))
+                }
+            }
         }
     }
 
@@ -213,14 +245,28 @@ class CheckoutViewModel(
         val currentState = _state.value
         val pkg = currentState.packageDetails ?: return
 
+        // The sheet was opened with the quoted amount; the same values MUST go
+        // to /wallet-pay. A missing quote means the sheet was somehow launched
+        // without one — refuse rather than send an amount the user didn't see.
+        val quote = currentState.walletQuote
+        if (quote == null) {
+            _state.update { it.copy(isLoading = false) }
+            viewModelScope.launch {
+                _events.send(
+                    CheckoutEvent.ShowError(UiText.Resource(Res.string.error_payment_failed))
+                )
+            }
+            return
+        }
+
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
             val request = WalletPaymentRequest(
                 sku = pkg.id,
                 bundleName = pkg.name,
-                amount = currentState.effectivePrice,
-                currency = "GEL",
+                amount = quote.amount,
+                currency = quote.currency,
                 paymentMethod = walletType,
                 walletToken = token,
                 promoCodeId = currentState.promo.appliedResult?.codeId
@@ -276,10 +322,15 @@ class CheckoutViewModel(
                 }
 
                 is Resource.Failure -> {
-                    _state.update { it.copy(isLoading = false) }
+                    // Clear the quote so the next attempt re-fetches a fresh one.
+                    _state.update { it.copy(isLoading = false, walletQuote = null) }
                     val messageRes = when (result.error) {
                         DataError.Remote.NO_INTERNET -> Res.string.error_no_internet
                         DataError.Remote.SERVER_ERROR -> Res.string.error_server_error_try_later
+                        // 409 WALLET_AMOUNT_MISMATCH: the NBG rate rolled over
+                        // between the quote and the payment. Nothing was charged —
+                        // the user just needs to confirm again at the fresh price.
+                        DataError.Remote.CONFLICT -> Res.string.error_price_updated_retry
                         else -> Res.string.error_payment_failed
                     }
                     _state.update { it.copy(error = result.error.toString()) }
@@ -504,29 +555,6 @@ class CheckoutViewModel(
             if (pkg != null) {
                 _state.update { it.copy(packageDetails = pkg) }
             }
-        }
-    }
-}
-
-/**
- * Normalizes a currency value (symbol or ISO code) to an ISO 4217 3-letter
- * code. Google Pay's `transactionInfo.currencyCode` and Apple Pay's
- * `PKPaymentRequest.currencyCode` both require strict ISO 4217 — symbols
- * like "$" or "₾" are rejected with "currencyCode is in wrong format".
- *
- * Falls back to "GEL" for anything unrecognized, since BOG's wallet-pay
- * endpoint settles in GEL regardless of the display currency.
- */
-private fun String.toIso4217CurrencyCode(): String {
-    return when (val trimmed = trim()) {
-        "$", "USD", "usd" -> "USD"
-        "€", "EUR", "eur" -> "EUR"
-        "₾", "GEL", "gel" -> "GEL"
-        "£", "GBP", "gbp" -> "GBP"
-        else -> if (trimmed.length == 3 && trimmed.all { it.isLetter() }) {
-            trimmed.uppercase()
-        } else {
-            "GEL"
         }
     }
 }
