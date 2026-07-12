@@ -139,7 +139,42 @@ class SessionManager(
             try {
                 logger.debug("[SessionManager] Starting token refresh...")
 
-                supabase.auth.refreshCurrentSession()
+                // Cold start: the Supabase client restores its persisted session
+                // ASYNCHRONOUSLY. Calling refreshCurrentSession() while it is
+                // still Initializing throws, the refresh "fails", and the 401
+                // surfaces to the UI even though a valid refresh token exists —
+                // the "dead app after long inactivity" bug.
+                supabase.auth.awaitInitialization()
+
+                val current = supabase.auth.currentSessionOrNull()
+                when {
+                    // Supabase's auto-refresh already produced a fresh session
+                    // (e.g. it rotated tokens while our TokenStorage copy went
+                    // stale) — adopt it without burning another rotation.
+                    current != null && !JwtExpiry.isExpired(current.accessToken) -> {
+                        logger.debug("[SessionManager] Adopting already-fresh Supabase session")
+                    }
+
+                    current != null -> {
+                        supabase.auth.refreshCurrentSession()
+                    }
+
+                    // Supabase's own storage has no session (cleared data or
+                    // storage divergence) — restore from the refresh token WE
+                    // persist, then hand the session back to the client so its
+                    // auto-refresh takes over again.
+                    else -> {
+                        val storedRefresh = tokenStorage.getRefreshToken().first()
+                        if (storedRefresh == null) {
+                            logger.warn("[SessionManager] No Supabase session and no stored refresh token")
+                            handleRefreshFailure()
+                            return@withLock null
+                        }
+                        logger.info("[SessionManager] Restoring session from stored refresh token")
+                        val restored = supabase.auth.refreshSession(storedRefresh)
+                        supabase.auth.importSession(restored)
+                    }
+                }
 
                 val session = supabase.auth.currentSessionOrNull()
                 if (session == null) {

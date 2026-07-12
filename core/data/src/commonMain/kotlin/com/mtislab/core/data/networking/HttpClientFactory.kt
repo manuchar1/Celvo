@@ -1,6 +1,7 @@
 package com.mtislab.core.data.networking
 
 import com.mtislab.core.data.BuildKonfig
+import com.mtislab.core.data.session.JwtExpiry
 import com.mtislab.core.data.session.SessionManager
 import com.mtislab.core.domain.logging.CelvoLogger
 import io.ktor.client.HttpClient
@@ -67,10 +68,33 @@ class HttpClientFactory(
                         val access = sessionManager.getAccessToken()
                         val refresh = sessionManager.getRefreshToken()
 
-                        if (access != null && refresh != null) {
-                            BearerTokens(access, refresh)
-                        } else {
-                            null
+                        when {
+                            access == null || refresh == null -> null
+
+                            // After long inactivity the persisted access token
+                            // is already expired. Refresh BEFORE the first
+                            // request instead of letting every startup call
+                            // fail with 401 (the "dead app after idle" bug).
+                            JwtExpiry.isExpired(access) -> {
+                                val newTokens = try {
+                                    sessionManager.refreshSession()
+                                } catch (e: Exception) {
+                                    celvoLogger.error(
+                                        "[HttpClient] Proactive token refresh failed",
+                                        e
+                                    )
+                                    null
+                                }
+                                if (newTokens != null) {
+                                    BearerTokens(newTokens.first, newTokens.second)
+                                } else {
+                                    // Fall back to the stored token — the 401
+                                    // will trigger refreshTokens once more.
+                                    BearerTokens(access, refresh)
+                                }
+                            }
+
+                            else -> BearerTokens(access, refresh)
                         }
                     }
 
